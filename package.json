@@ -1,0 +1,32 @@
+{
+  "name": "mimobadge",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:migrate": "tsx db/migrate.ts",
+    "format": "prettier --write app components db domain lib services tests types *.json *.ts *.md *.yaml"
+  },
+  "dependencies": {
+    "next": "^16.3.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "pg": "^8.16.3",
+    "lucide-react": "^0.468.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/pg": "^8.15.5",
+    "tsx": "^4.20.0",
+    "prettier": "^3.6.2",
+    "@electric-sql/pglite": "^0.3.14"
+  }
+}
