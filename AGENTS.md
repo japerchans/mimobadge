@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Product UX reviews
+
+For requests to simplify the interface, remove features, improve information architecture, or run a multi-agent UX review, read and follow `skills/ux-pruning-council/SKILL.md`.
