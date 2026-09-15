@@ -83,6 +83,46 @@ export type Handoff = {
   createdBy: string;
   content: string;
 };
+export type MemoryNodeType = "person" | "place" | "event" | "time";
+export type MemoryNode = {
+  id: string;
+  residentId: string;
+  type: MemoryNodeType;
+  label: string;
+  normalizedLabel: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  mentionCount: number;
+  episodeIds: string[];
+};
+export type MemoryEpisode = {
+  id: string;
+  residentId: string;
+  recordingId: string;
+  summary: string;
+  sourceExcerpt: string;
+  createdAt: string;
+  approvedBy: string;
+  nodeIds: string[];
+};
+export type MemoryEdge = {
+  id: string;
+  residentId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  weight: number;
+  episodeIds: string[];
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+export type MemoryGraphMetrics = {
+  nodeCount: number;
+  edgeCount: number;
+  largestConnectedComponent: number;
+  averageDegree: number;
+  nodeTypeDiversity: number;
+  nodesByType: Record<MemoryNodeType, number>;
+};
 export type Workspace = {
   facility: { id: string; name: string };
   residents: Resident[];
@@ -92,6 +132,9 @@ export type Workspace = {
   records: CareRecord[];
   audit: AuditLog[];
   handoffs: Handoff[];
+  memoryNodes: MemoryNode[];
+  memoryEpisodes: MemoryEpisode[];
+  memoryEdges: MemoryEdge[];
 };
 export type Session = {
   facilityId: string;

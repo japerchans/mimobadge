@@ -6,6 +6,7 @@ import {
   DemoSpeechToText,
   ManualResidentAssociation,
 } from "@/services/providers";
+import { rebuildMemoryGraph } from "./memory-graph";
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("transfer"), residentId: z.string().nullable() }),
   z.object({ type: z.literal("process"), id: z.string() }),
@@ -269,6 +270,7 @@ export async function executeAction(
           createdAt: now,
           approvedBy: session.userId,
         });
+      rebuildMemoryGraph(state);
       r.status = "completed";
       // Only the approved evidence excerpts persist; raw conversations are discarded on finalization.
       r.transcript = [];
@@ -308,6 +310,7 @@ export async function executeAction(
       item.status = "edited";
       item.approvedBy = session.userId;
     }
+    rebuildMemoryGraph(state);
     audit(
       input.type === "delete-information"
         ? "Deleted resident information"

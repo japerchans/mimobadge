@@ -7,5 +7,11 @@ CREATE TABLE IF NOT EXISTS information (id text NOT NULL, facility_id text NOT N
 CREATE TABLE IF NOT EXISTS care_records (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), resident_id text NOT NULL, recording_id text NOT NULL, data jsonb NOT NULL, PRIMARY KEY (facility_id,id), UNIQUE(facility_id,recording_id), FOREIGN KEY (facility_id,resident_id) REFERENCES residents(facility_id,id), FOREIGN KEY (facility_id,recording_id) REFERENCES recordings(facility_id,id));
 CREATE TABLE IF NOT EXISTS audit_logs (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), data jsonb NOT NULL, PRIMARY KEY (facility_id,id));
 CREATE TABLE IF NOT EXISTS handoffs (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), data jsonb NOT NULL, PRIMARY KEY (facility_id,id));
+CREATE TABLE IF NOT EXISTS memory_nodes (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), resident_id text NOT NULL, data jsonb NOT NULL, PRIMARY KEY (facility_id,id), FOREIGN KEY (facility_id,resident_id) REFERENCES residents(facility_id,id));
+CREATE TABLE IF NOT EXISTS memory_episodes (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), resident_id text NOT NULL, recording_id text NOT NULL, data jsonb NOT NULL, PRIMARY KEY (facility_id,id), FOREIGN KEY (facility_id,resident_id) REFERENCES residents(facility_id,id), FOREIGN KEY (facility_id,recording_id) REFERENCES recordings(facility_id,id));
+CREATE TABLE IF NOT EXISTS memory_edges (id text NOT NULL, facility_id text NOT NULL REFERENCES facilities(id), resident_id text NOT NULL, data jsonb NOT NULL, PRIMARY KEY (facility_id,id), FOREIGN KEY (facility_id,resident_id) REFERENCES residents(facility_id,id));
 CREATE INDEX IF NOT EXISTS information_resident ON information(facility_id,resident_id);
 CREATE INDEX IF NOT EXISTS recordings_resident ON recordings(facility_id,resident_id);
+CREATE INDEX IF NOT EXISTS memory_nodes_resident ON memory_nodes(facility_id,resident_id);
+CREATE INDEX IF NOT EXISTS memory_episodes_resident ON memory_episodes(facility_id,resident_id);
+CREATE INDEX IF NOT EXISTS memory_edges_resident ON memory_edges(facility_id,resident_id);

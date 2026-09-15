@@ -3,6 +3,7 @@ import path from "node:path";
 import { Pool, type PoolClient } from "pg";
 import { seedWorkspace } from "./seed";
 import type { Workspace } from "@/types";
+import { ensureMemoryGraph } from "@/domain/memory-graph";
 const tables = {
   caregivers: "caregivers",
   residents: "residents",
@@ -11,6 +12,9 @@ const tables = {
   records: "care_records",
   audit: "audit_logs",
   handoffs: "handoffs",
+  memoryNodes: "memory_nodes",
+  memoryEpisodes: "memory_episodes",
+  memoryEdges: "memory_edges",
 } as const;
 const globalDb = globalThis as unknown as {
   mimoPool?: Pool;
@@ -43,7 +47,7 @@ async function loadPostgres(
       (r) => r.data,
     );
   }
-  return state;
+  return ensureMemoryGraph(state);
 }
 export async function savePostgres(client: PoolClient, state: Workspace) {
   for (const [key, table] of Object.entries(tables)) {
@@ -59,11 +63,20 @@ export async function savePostgres(client: PoolClient, state: Workspace) {
         state.facility.id,
         JSON.stringify(item),
       ];
-      if (["recordings", "information", "care_records"].includes(table)) {
+      if (
+        [
+          "recordings",
+          "information",
+          "care_records",
+          "memory_nodes",
+          "memory_episodes",
+          "memory_edges",
+        ].includes(table)
+      ) {
         columns.push("resident_id");
         args.push(item.residentId ?? null);
       }
-      if (["information", "care_records"].includes(table)) {
+      if (["information", "care_records", "memory_episodes"].includes(table)) {
         columns.push("recording_id");
         args.push(item.recordingId);
       }
@@ -76,9 +89,16 @@ export async function savePostgres(client: PoolClient, state: Workspace) {
       );
     }
     // Audit is append-only. Profile deletion removes the item while preserving action metadata.
-    if (table === "information")
+    if (
+      [
+        "information",
+        "memory_nodes",
+        "memory_episodes",
+        "memory_edges",
+      ].includes(table)
+    )
       await client.query(
-        "DELETE FROM information WHERE facility_id=$1 AND NOT (id = ANY($2::text[]))",
+        `DELETE FROM ${table} WHERE facility_id=$1 AND NOT (id = ANY($2::text[]))`,
         [state.facility.id, values.map((v) => v.id)],
       );
   }
@@ -95,7 +115,7 @@ async function localTransaction<T>(
   await mkdir(dir, { recursive: true, mode: 0o700 });
   let state: Workspace;
   try {
-    state = JSON.parse(await readFile(file, "utf8"));
+    state = ensureMemoryGraph(JSON.parse(await readFile(file, "utf8")));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     state = seedWorkspace();
