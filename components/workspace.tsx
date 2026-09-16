@@ -3,16 +3,14 @@ import { ja } from "@/lib/ja";
 import type { Information, WorkspaceResponse } from "@/types";
 import {
   ArrowRightLeft,
-  AudioLines,
   Cable,
   Check,
-  ChevronRight,
   FileText,
   LayoutDashboard,
   PanelLeft,
   PanelLeftClose,
-  Search,
   Settings,
+  UsersRound,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,10 +28,10 @@ import {
 import { InformationDetail } from "./information-detail";
 import { RecordingWorkspace } from "./recording-workspace";
 import { ResidentWorkspace } from "./resident-workspace";
-import { Avatar, Empty, formatDate, Modal } from "./shared";
+import { Avatar, Empty, Modal } from "./shared";
 export const nav = [
   { href: "/", label: "確認待ち", icon: LayoutDashboard },
-  { href: "/processing", label: "録音一覧", icon: AudioLines },
+  { href: "/residents", label: "入居者", icon: UsersRound },
   { href: "/records", label: "介護記録", icon: FileText },
   { href: "/handoffs", label: "申し送り", icon: ArrowRightLeft },
 ];
@@ -41,7 +39,6 @@ export function WorkspaceApp() {
   const [data, setData] = useState<WorkspaceResponse | null>(null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
-  const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [transfer, setTransfer] = useState(false);
   const [selected, setSelected] = useState("tanaka");
@@ -68,6 +65,18 @@ export function WorkspaceApp() {
       return () => clearTimeout(id);
     }
   }, [toast]);
+  useEffect(() => {
+    if (!collapsed) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        window.matchMedia("(max-width: 680px)").matches
+      )
+        setCollapsed(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [collapsed]);
   const action = async (input: unknown, message?: string) => {
     const response = await fetch("/api/actions", {
       method: "POST",
@@ -84,7 +93,7 @@ export function WorkspaceApp() {
     return (
       <main className="boot">
         <img src="/icon.svg" width="42" height="42" alt="" />
-        <h1>みもバッジ</h1>
+        <h1>こころん</h1>
         {error ? (
           <>
             <p role="alert">{ja(error)}</p>
@@ -116,7 +125,7 @@ export function WorkspaceApp() {
       : {
           "/": "確認待ち",
           "/dashboard": "確認待ち",
-          "/processing": "録音一覧",
+          "/processing": "録音履歴",
           "/records": "介護記録",
           "/handoffs": "申し送り",
           "/residents": "入居者",
@@ -125,6 +134,13 @@ export function WorkspaceApp() {
         }[pathname] || "見つかりません");
   return (
     <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+      {collapsed && (
+        <button
+          className="sidebar-backdrop"
+          aria-label="メニューを閉じる"
+          onClick={() => setCollapsed(false)}
+        />
+      )}
       <aside
         className="sidebar"
         onClick={(e) => {
@@ -135,28 +151,19 @@ export function WorkspaceApp() {
             setCollapsed(false);
         }}
       >
-        <Link className="brand" href="/">
-          <img src="/icon.svg" width="32" height="32" alt="" />
-          <span>
-            みもバッジ<small>みもバッジ</small>
-          </span>
-        </Link>
-        <div className="facility-switch">
-          <span className="facility-symbol">S</span>
-          <div>
-            さくらケアホーム<small>介護記録</small>
-          </div>
+        <div className="sidebar-brand-row">
+          <Link className="brand" href="/">
+            <img src="/icon.svg" width="32" height="32" alt="" />
+            <span>こころん</span>
+          </Link>
+          <button
+            className="icon-button sidebar-close"
+            aria-label="メニューを閉じる"
+            onClick={() => setCollapsed(false)}
+          >
+            <X size={19} />
+          </button>
         </div>
-        <label className="search">
-          <Search size={16} />
-          <input
-            aria-label="入居者・職員を検索"
-            placeholder="名前・部屋番号で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <kbd>⌕</kbd>
-        </label>
         <nav className="main-nav">
           {nav.map((n) => (
             <Link
@@ -164,6 +171,9 @@ export function WorkspaceApp() {
               href={n.href}
               className={
                 pathname === n.href ||
+                (n.href === "/" &&
+                  (pathname === "/dashboard" ||
+                    pathname.startsWith("/processing/"))) ||
                 (n.href !== "/" && pathname.startsWith(n.href))
                   ? "active"
                   : ""
@@ -171,78 +181,47 @@ export function WorkspaceApp() {
             >
               <n.icon size={18} />
               {n.label}
-              {n.href === "/processing" && pending.length > 0 && (
+              {n.href === "/" && pending.length > 0 && (
                 <b className="nav-count">{pending.length}</b>
               )}
             </Link>
           ))}
         </nav>
-        {search &&
-          !data.residents.some((r) =>
-            `${r.name} ${ja(r.kana)} ${r.room}`.includes(search),
-          ) &&
-          !data.caregivers.some((c) => c.name.includes(search)) && (
-            <p className="search-empty" role="status">
-              一致する人が見つかりません。
-            </p>
-          )}
         <div className="sidebar-section">
           <div className="section-label">
-            <Link href="/residents">入居者</Link>
-            <span>{data.residents.length}</span>
+            <span>入居者を開く</span>
           </div>
           <div className="people-list">
-            {data.residents
-              .filter((r) =>
-                `${r.name} ${ja(r.kana)} ${r.room}`
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
-              )
-              .map((r) => {
-                const waiting = data.recordings.filter(
-                  (x) => x.residentId === r.id && x.status !== "completed",
-                ).length;
-                return (
-                  <Link
-                    key={r.id}
-                    href={`/residents/${r.id}`}
-                    className={
-                      resident?.id === r.id || recording?.residentId === r.id
-                        ? "selected"
-                        : ""
-                    }
-                  >
-                    <Avatar resident={r} />
-                    <span>
-                      {r.name}
-                      <small>
-                        {waiting
-                          ? `未確認の録音 ${waiting}件`
-                          : `${r.room}号室`}
-                      </small>
-                    </span>
-                    {waiting > 0 && <span className="unread" />}
-                  </Link>
-                );
-              })}
+            {data.residents.map((r) => {
+              const waiting = data.recordings.filter(
+                (x) => x.residentId === r.id && x.status !== "completed",
+              ).length;
+              return (
+                <Link
+                  key={r.id}
+                  href={`/residents/${r.id}`}
+                  className={
+                    resident?.id === r.id || recording?.residentId === r.id
+                      ? "selected"
+                      : ""
+                  }
+                >
+                  <Avatar resident={r} />
+                  <span>
+                    {r.name}
+                    <small>
+                      {waiting ? `未確認の録音 ${waiting}件` : `${r.room}号室`}
+                    </small>
+                  </span>
+                  {waiting > 0 && <span className="unread" />}
+                </Link>
+              );
+            })}
           </div>
-        </div>
-        <div className="sidebar-section staff-section">
-          <div className="section-label">
-            <Link href="/staff">担当職員</Link>
-            <span>{data.caregivers.length}</span>
-          </div>
-          {data.caregivers
-            .filter((c) => c.name.includes(search))
-            .map((c) => (
-              <Link className="staff-link" key={c.id} href={`/staff#${c.id}`}>
-                <span className="staff-avatar">{c.name[0]}</span>
-                <span>{c.name}</span>
-                <span className="muted small">{c.badge}</span>
-              </Link>
-            ))}
         </div>
         <div className="sidebar-bottom">
+          <Link href="/processing">録音履歴</Link>
+          <Link href="/staff">担当職員</Link>
           <Link href="/settings">
             <Settings size={17} />
             設定・利用情報
@@ -252,7 +231,6 @@ export function WorkspaceApp() {
             <div>
               青木 美咲<small>介護職員 · 日勤</small>
             </div>
-            <span className="demo-chip">デモ</span>
           </div>
         </div>
       </aside>
@@ -261,7 +239,7 @@ export function WorkspaceApp() {
           <div className="row">
             <button
               className="icon-button"
-              aria-label="入居者一覧の表示を切り替え"
+              aria-label="メニューの表示を切り替え"
               onClick={() => setCollapsed(!collapsed)}
             >
               {collapsed ? (
@@ -270,16 +248,7 @@ export function WorkspaceApp() {
                 <PanelLeftClose size={19} />
               )}
             </button>
-            <span className="muted">介護記録</span>
-            <ChevronRight size={14} />
             <span>{title}</span>
-          </div>
-          <div className="row">
-            <span className="top-date">
-              {formatDate(new Date().toISOString(), { weekday: "short" })}
-            </span>
-            <span className="divider" />
-            <span className="demo-label">デモ施設</span>
           </div>
         </header>
         <main className="main-content">
@@ -298,11 +267,7 @@ export function WorkspaceApp() {
               action={action}
             />
           ) : pathname === "/" || pathname === "/dashboard" ? (
-            <Dashboard
-              data={data}
-              onTransfer={() => setTransfer(true)}
-              inspect={setItem}
-            />
+            <Dashboard data={data} />
           ) : pathname === "/processing" ? (
             <Recordings data={data} onTransfer={() => setTransfer(true)} />
           ) : pathname === "/residents" ? (
@@ -322,8 +287,8 @@ export function WorkspaceApp() {
           )}
         </main>
         <footer className="app-footer">
-          <span>みもバッジ</span>
-          <span>架空のデータ · 日本標準時</span>
+          <span>こころん</span>
+          <span>デモデータを使用しています</span>
         </footer>
       </div>
       {toast && (

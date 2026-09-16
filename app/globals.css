@@ -1590,6 +1590,60 @@ dialog::backdrop {
   }
 }
 
+/* Keep the daily navigation focused on tasks; the people list remains direct access. */
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-close,
+.sidebar-backdrop {
+  display: none;
+}
+.main-nav {
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin: 22px 0 24px;
+}
+.main-nav > a {
+  min-height: 43px;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.sidebar-section {
+  padding-top: 16px;
+}
+.section-label {
+  padding-bottom: 5px;
+}
+.topbar {
+  justify-content: flex-start;
+}
+@media (max-width: 680px) {
+  .sidebar-collapsed .topbar {
+    padding: 0 16px;
+  }
+  .sidebar-collapsed .topbar .row > span {
+    display: inline;
+  }
+  .sidebar-collapsed .sidebar {
+    z-index: 12;
+  }
+  .sidebar-collapsed .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 11;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    background: rgba(31, 43, 54, 0.35);
+  }
+  .sidebar-close {
+    display: inline-flex;
+  }
+}
+
 .care-breakdown {
   margin: 16px 0 0 22px;
   color: #aaa;

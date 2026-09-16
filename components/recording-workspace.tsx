@@ -103,12 +103,11 @@ export function RecordingWorkspace({
   };
   return (
     <>
-      <Link href="/processing" className="back-link">
+      <Link href="/" className="back-link">
         <ArrowLeft size={15} />
-        すべての録音
+        確認待ちに戻る
       </Link>
       <PageHeading
-        eyebrow={`${r.id} · デモ録音`}
         title={
           resident ? `${resident.name} · 会話の記録` : "会話した入居者を選択"
         }
@@ -282,13 +281,7 @@ export function RecordingWorkspace({
                   <div className="audio-summary">
                     <AudioLines size={24} />
                     <div>
-                      <strong>
-                        バッジ{" "}
-                        {
-                          data.caregivers.find((c) => c.id === r.caregiverId)
-                            ?.badge
-                        }
-                      </strong>
+                      <strong>録音の内容</strong>
                       <small>{duration(r.duration)}· デモ録音</small>
                     </div>
                   </div>

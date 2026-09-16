@@ -339,7 +339,7 @@ export function Staff({ data }: { data: WorkspaceResponse }) {
     <>
       <PageHeading
         title="担当職員"
-        description="担当する入居者とバッジを確認できます。"
+        description="担当する入居者と勤務時間を確認できます。"
       />
       <div className="staff-grid">
         {data.caregivers.map((c) => (
@@ -350,8 +350,6 @@ export function Staff({ data }: { data: WorkspaceResponse }) {
             <dl className="about-list">
               <dt>勤務時間</dt>
               <dd>{c.shift}</dd>
-              <dt>使用バッジ</dt>
-              <dd>{c.badge}</dd>
               <dt>入居者</dt>
               <dd>
                 {data.residents

@@ -32,7 +32,7 @@ const labels: Record<string, string> = {
   Settings: "設定",
   "Recording review": "録音の確認",
   "Not found": "見つかりません",
-  MimoBadge: "みもバッジ",
+  MimoBadge: "こころん",
   "Sakura Care Home": "さくらケアホーム",
   "Facility workspace": "介護記録",
   "Find a resident or staff member": "入居者・職員を検索",
