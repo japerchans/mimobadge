@@ -1,13 +1,8 @@
 "use client";
 import type { Information, Resident, WorkspaceResponse } from "@/types";
-import {
-  Brain,
-  ChevronRight,
-  FileText,
-  MessageCircle,
-  Send,
-} from "lucide-react";
+import { ChevronRight, FileText, MessageCircle, Send } from "lucide-react";
 import Link from "next/link";
+import { KokologMark } from "./kokolog-mark";
 import { useEffect, useRef, useState } from "react";
 import { ja } from "@/lib/ja";
 import {
@@ -33,93 +28,58 @@ export function ResidentWorkspace({
   const [messages, setMessages] = useState<
     { question: string; answer: string }[]
   >([]);
+  const [busy, setBusy] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [pendingQuestion, setPendingQuestion] = useState("");
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
   const messageEnd = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (messages.length)
       messageEnd.current?.scrollIntoView({ block: "nearest" });
-  }, [messages]);
+  }, [messages, busy, chatError]);
   const items = data.information.filter((i) => i.residentId === r.id);
   const profile = items.filter((i) => i.kind === "profile");
-  const careItems = items.filter((i) => i.kind === "care");
-  const graphNodes = data.memoryNodes.filter(
-    (node) => node.residentId === r.id,
-  );
-  const answerQuestion = (askedQuestion: string) => {
-    const lower = askedQuestion.toLocaleLowerCase("ja");
-    const byCategory = (category: string) =>
-      profile
-        .filter((item) => item.category === category)
-        .map((item) => item.content);
-    if (!askedQuestion)
-      return [
-        `${r.name}さんについて、確認済みの記録と記憶グラフから大事な情報だけをまとめます。`,
-        profile
-          .slice(0, 3)
-          .map((item) => `${ja(item.category)}：${item.content}`)
-          .join("\n"),
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-    if (lower.includes("家族") || lower.includes("family"))
-      return (
-        byCategory("Family").join("\n") ||
-        "家族に関する確認済み情報はまだ少ないです。"
-      );
-    if (
-      lower.includes("好き") ||
-      lower.includes("趣味") ||
-      lower.includes("interest")
-    )
-      return (
-        byCategory("Interests").join("\n") ||
-        "好きなことはまだ確認済み情報にありません。"
-      );
-    if (
-      lower.includes("今日") ||
-      lower.includes("状態") ||
-      lower.includes("様子")
-    )
-      return careItems
-        .slice()
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .slice(0, 3)
-        .map((item) => `${formatDate(item.updatedAt)}：${item.content}`)
-        .join("\n");
-    if (
-      lower.includes("記憶") ||
-      lower.includes("memory") ||
-      lower.includes("関係")
-    )
-      return graphNodes.length
-        ? graphNodes
-            .slice(0, 6)
-            .map(
-              (node) =>
-                `${node.label}（${ja(node.type)}・${node.mentionCount}回）`,
-            )
-            .join("\n")
-        : "記憶グラフに表示できるノードはまだありません。";
-    return (
-      [...profile, ...careItems]
-        .filter((item) => item.content.includes(askedQuestion.slice(0, 4)))
-        .slice(0, 4)
-        .map((item) => `${ja(item.category)}：${item.content}`)
-        .join("\n") ||
-      "近い情報は見つかりませんでした。プロフィールか記録を開いて確認してください。"
-    );
-  };
-  const ask = (text: string) => {
+  const greeting = `${r.name}さんについて、知りたいことを聞いてください。確認済みの記録と記憶グラフをもとにお答えします。`;
+  const ask = async (text: string) => {
     const next = text.trim();
-    if (!next) return;
-    setMessages((previous) => [
-      ...previous,
-      {
-        question: next,
-        answer:
-          answerQuestion(next) || "該当する確認済みの記録はまだありません。",
-      },
-    ]);
+    if (!next || requestRef.current) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setBusy(true);
+    setChatError("");
+    setPendingQuestion(next);
     setQuestion("");
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          residentId: r.id,
+          question: next,
+          history: messages.slice(-10),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "回答を取得できませんでした。");
+      setMessages((previous) => [
+        ...previous,
+        { question: next, answer: result.answer },
+      ]);
+      setPendingQuestion("");
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setChatError(
+          error instanceof Error
+            ? error.message
+            : "接続を確認して再試行してください。",
+        );
+    } finally {
+      requestRef.current = null;
+      setBusy(false);
+    }
   };
   const pending = data.recordings.filter(
     (x) => x.residentId === r.id && x.status !== "completed",
@@ -201,11 +161,11 @@ export function ResidentWorkspace({
               >
                 <div className="ai-message">
                   <span className="ai-avatar">
-                    <Brain size={18} />
+                    <KokologMark />
                   </span>
                   <div>
                     <strong>ここログAI</strong>
-                    <p>{answerQuestion("")}</p>
+                    <p>{greeting}</p>
                   </div>
                 </div>
                 {messages.map((message, index) => (
@@ -216,7 +176,7 @@ export function ResidentWorkspace({
                     </div>
                     <div className="ai-message">
                       <span className="ai-avatar">
-                        <Brain size={18} />
+                        <KokologMark />
                       </span>
                       <div>
                         <strong>ここログAI</strong>
@@ -225,10 +185,39 @@ export function ResidentWorkspace({
                     </div>
                   </div>
                 ))}
+                {pendingQuestion && (
+                  <div className="chat-turn">
+                    <div className="user-message">
+                      <strong>あなた</strong>
+                      <p>{pendingQuestion}</p>
+                    </div>
+                    <div className="ai-message">
+                      <span className="ai-avatar">
+                        <KokologMark />
+                      </span>
+                      <div>
+                        <strong>ここログAI</strong>
+                        {busy ? (
+                          <p role="status">記録を確認しています…</p>
+                        ) : (
+                          <>
+                            <p role="alert">{chatError}</p>
+                            <button
+                              className="chat-retry"
+                              onClick={() => ask(pendingQuestion)}
+                            >
+                              もう一度試す
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messageEnd} />
               </div>
               <div className="chat-composer">
-                {messages.length === 0 && (
+                {messages.length === 0 && !pendingQuestion && (
                   <div className="quick-questions" aria-label="よく使う質問">
                     {[
                       "家族に伝えること",
@@ -253,6 +242,7 @@ export function ResidentWorkspace({
                 >
                   <MessageCircle size={18} />
                   <input
+                    maxLength={2000}
                     value={question}
                     onChange={(event) => setQuestion(event.target.value)}
                     placeholder="家族、好きなこと、今日の様子などを質問"
@@ -261,7 +251,7 @@ export function ResidentWorkspace({
                   <button
                     type="submit"
                     aria-label="質問する"
-                    disabled={!question.trim()}
+                    disabled={busy || !question.trim()}
                   >
                     <Send size={16} />
                   </button>

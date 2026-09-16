@@ -92,3 +92,14 @@
 | P2       | App shell        | Supplied logo, blue navigation and coral AI avatar                | Carry the user's brand into the screen                             |
 
 Primary action: ask about the resident. Suggestions disappear after the first question. Standalone episode teaser and pending recording cards are removed from the chat; source records remain available through the existing record/profile tabs. Verify multiple turns, blank submission prevention, full-width layout and mobile overflow.
+
+### AIチャットの実接続
+
+| Priority | Page             | Decision                                                     | Why                                                                    | Evidence                      |
+| -------- | ---------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | ----------------------------- |
+| P0       | Resident AI chat | サーバー側のOpenAI接続で回答し、選択中の入居者情報だけを渡す | ブラウザにAPIキーを出さず、別入居者の情報を混ぜない                    | `app/api/chat/route.ts`       |
+| P0       | Resident AI chat | 確認済み記録と記憶グラフだけを根拠にする                     | 介護記録の補助として、推測や診断に寄らない                             | `app/api/chat/route.ts`       |
+| P1       | Resident AI chat | ここログのコーラル部分をもとにしたAIマークを吹き出し外に置く | 会話相手として見え、白い吹き出し内の本文も読みやすい                   | `components/kokolog-mark.tsx` |
+| P2       | Resident AI chat | 吹き出し、入力欄、タブ境界に最小限の影を足す                 | 白いニューモーフィズムの軽さを保ちながら、薄く見える部分だけを補強する | `app/globals.css`             |
+
+回答は現在の画面内の会話履歴だけを10往復まで送り、送信失敗時は同じ質問を画面に残して再試行できるようにする。家族向け文面は下書きとして作成できるが、送信したとは表示しない。

@@ -2460,3 +2460,58 @@ dialog::backdrop {
   background: #f5f8ff;
   color: #285bb1;
 }
+
+/* Separate the coral identity from the message, as in a messaging app. */
+.chat-layout .ai-message {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  max-width: 88%;
+  gap: 12px;
+}
+.chat-layout .ai-avatar {
+  background: transparent;
+  box-shadow: none;
+  width: 38px;
+  height: 40px;
+  margin-top: 5px;
+}
+.chat-layout .ai-message > div {
+  min-width: 0;
+  padding: 17px 21px;
+  background: #fff;
+  border: 1px solid #d9e2f0;
+  border-radius: 5px 21px 21px 21px;
+  box-shadow: 0 3px 10px rgba(43, 65, 104, 0.09);
+}
+.chat-composer .ai-question-box {
+  box-shadow: 0 3px 12px rgba(43, 65, 104, 0.12);
+}
+.user-message {
+  box-shadow: 0 3px 9px rgba(36, 72, 140, 0.14);
+}
+.resident-heading + .tabs {
+  box-shadow: 0 2px 5px rgba(43, 65, 104, 0.06);
+}
+.chat-retry {
+  margin-top: 10px;
+}
+@media (max-width: 680px) {
+  .chat-layout .ai-message {
+    max-width: 100%;
+    gap: 8px;
+    padding: 0;
+  }
+  .chat-layout .ai-message > div {
+    padding: 13px 15px;
+  }
+  .chat-layout .ai-avatar {
+    width: 30px;
+    flex-basis: 30px;
+  }
+  .chat-layout .ai-avatar svg {
+    width: 30px;
+  }
+}
