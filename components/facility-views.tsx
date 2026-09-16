@@ -16,6 +16,7 @@ import { useState } from "react";
 import {
   Action,
   Avatar,
+  CaregiverAvatar,
   Empty,
   formatDate,
   isToday,
@@ -344,7 +345,7 @@ export function Staff({ data }: { data: WorkspaceResponse }) {
       <div className="staff-grid">
         {data.caregivers.map((c) => (
           <section className="panel staff-card" id={c.id} key={c.id}>
-            <span className="staff-avatar large">{c.name[0]}</span>
+            <CaregiverAvatar caregiver={c} large />
             <h2>{c.name}</h2>
             <p>{ja(c.role)}</p>
             <dl className="about-list">

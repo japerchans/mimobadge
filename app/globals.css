@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
-  --ink: #26323d;
-  --muted: #758392;
+  --ink: #111820;
+  --muted: #4f5f6d;
   --line: #d9e0e7;
   --page: #f3f6f9;
   --surface: #f4f7fa;
@@ -27,9 +27,9 @@ body {
   background: #e9eef3;
   color: var(--ink);
   font-family:
-    -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
-    sans-serif;
+    var(--font-noto-sans-jp), "Noto Sans JP", "Hiragino Sans", sans-serif;
   font-size: 15px;
+  font-weight: 500;
   line-height: 1.8;
 }
 button,
@@ -143,6 +143,7 @@ small,
 }
 .muted {
   color: var(--muted);
+  font-weight: 500;
 }
 .row {
   display: flex;
@@ -182,7 +183,7 @@ small,
   gap: 11px;
   padding: 0 12px;
   font-size: 19px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .brand small {
   display: none;
@@ -280,6 +281,7 @@ small,
   flex: 1;
   min-width: 0;
   font-size: 16px;
+  font-weight: 700;
 }
 .people-list small {
   display: block;
@@ -302,6 +304,55 @@ small,
   font-size: 19px;
   font-weight: 600;
 }
+.face-icon {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.face-icon::before {
+  content: "";
+  position: absolute;
+  inset: 8px 7px 6px;
+  border-radius: 48% 48% 46% 46%;
+  background: #f6d9bd;
+  box-shadow: inset 0 -4px 0 rgba(80, 58, 42, 0.08);
+}
+.face-hair {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  width: 20px;
+  height: 12px;
+  border-radius: 13px 13px 7px 7px;
+  background: #5f5148;
+  z-index: 1;
+}
+.face-eye,
+.face-mouth {
+  position: absolute;
+  z-index: 2;
+  background: #17202a;
+}
+.face-eye {
+  top: 20px;
+  width: 3px;
+  height: 4px;
+  border-radius: 50%;
+}
+.face-eye.left {
+  left: 15px;
+}
+.face-eye.right {
+  right: 15px;
+}
+.face-mouth {
+  left: 17px;
+  bottom: 13px;
+  width: 7px;
+  height: 2px;
+  border-radius: 99px;
+  opacity: 0.65;
+}
 .avatar.suzuki {
   background: #efa746;
   color: #493011;
@@ -322,6 +373,29 @@ small,
   width: 54px;
   height: 54px;
   font-size: 23px;
+}
+.avatar.large::before {
+  inset: 10px 9px 8px;
+}
+.avatar.large .face-hair {
+  top: 8px;
+  left: 14px;
+  width: 26px;
+  height: 15px;
+}
+.avatar.large .face-eye {
+  top: 27px;
+}
+.avatar.large .face-eye.left {
+  left: 20px;
+}
+.avatar.large .face-eye.right {
+  right: 20px;
+}
+.avatar.large .face-mouth {
+  left: 23px;
+  bottom: 16px;
+  width: 8px;
 }
 .unread {
   width: 6px;
@@ -355,10 +429,62 @@ small,
   flex-shrink: 0;
   font-size: 13px;
 }
+.staff-avatar::before {
+  inset: 6px 5px 4px;
+  background: #f4d2b5;
+}
+.staff-avatar .face-hair {
+  top: 4px;
+  left: 7px;
+  width: 15px;
+  height: 9px;
+  background: #354453;
+}
+.staff-avatar .face-eye {
+  top: 14px;
+  width: 2px;
+  height: 3px;
+}
+.staff-avatar .face-eye.left {
+  left: 11px;
+}
+.staff-avatar .face-eye.right {
+  right: 11px;
+}
+.staff-avatar .face-mouth {
+  left: 12px;
+  bottom: 9px;
+  width: 5px;
+}
 .staff-avatar.large {
   width: 52px;
   height: 52px;
   font-size: 21px;
+}
+.staff-avatar.large::before {
+  inset: 10px 9px 7px;
+}
+.staff-avatar.large .face-hair {
+  top: 8px;
+  left: 14px;
+  width: 24px;
+  height: 14px;
+}
+.staff-avatar.large .face-eye {
+  top: 25px;
+  width: 3px;
+  height: 4px;
+}
+.staff-avatar.large .face-eye.left {
+  left: 19px;
+}
+.staff-avatar.large .face-eye.right {
+  right: 19px;
+}
+.staff-avatar.large .face-mouth {
+  left: 22px;
+  bottom: 15px;
+  width: 8px;
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -605,7 +731,8 @@ button.text-link {
 }
 .resident-heading p {
   font-size: 13px;
-  color: #b2b2ab;
+  color: var(--muted);
+  font-weight: 500;
   margin-top: 5px;
 }
 .tabs {
@@ -711,6 +838,78 @@ button.text-link {
   width: calc(100% - 22px);
   border-radius: 15px;
   background: #2b2b2b;
+}
+.ai-memory-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 22px;
+  border-radius: 18px;
+  background: #eef3f7;
+  color: #1c2832;
+  box-shadow: var(--raised-shadow-small);
+}
+.ai-message strong {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.ai-message p {
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.95;
+}
+.ai-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #285f59;
+  background: #e1efec;
+  box-shadow: var(--inset-shadow);
+}
+.ai-question-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 15px;
+  border-radius: 18px;
+  background: #edf2f6;
+  box-shadow: var(--inset-shadow);
+}
+.ai-question-box > svg {
+  color: #536675;
+}
+.ai-question-box input {
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+}
+.ai-question-box button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+}
+.quick-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.quick-questions button {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #2c4f4b;
 }
 .pending-bubble {
   display: flex;
@@ -1644,6 +1843,16 @@ dialog::backdrop {
   }
 }
 
+.caregiver-aoki .face-hair {
+  background: #2f5d6d;
+}
+.caregiver-ito .face-hair {
+  background: #51456c;
+}
+.caregiver-nakamura .face-hair {
+  background: #6b445c;
+}
+
 .care-breakdown {
   margin: 16px 0 0 22px;
   color: #aaa;
@@ -1782,7 +1991,8 @@ textarea::placeholder {
 .login p,
 .care-breakdown,
 .search-empty {
-  color: var(--muted);
+  color: #526372;
+  font-weight: 500;
 }
 
 .app-shell {
@@ -1806,7 +2016,8 @@ textarea::placeholder {
 .current-user small,
 .main-nav > a,
 .staff-link > .small {
-  color: #7b8895;
+  color: #506171;
+  font-weight: 600;
 }
 
 .search {
@@ -2000,7 +2211,8 @@ button.text-link:hover {
 .record-bubble > .text-link,
 .memory-bubble small,
 .person-context button > span {
-  color: #7f8c98;
+  color: #536474;
+  font-weight: 500;
 }
 
 .record-bubble,
@@ -2020,10 +2232,12 @@ button.text-link:hover {
   border-color: rgba(255, 255, 255, 0.82);
   color: #2c3944;
   box-shadow: var(--raised-shadow-small);
+  font-weight: 500;
 }
 
 .memory-bubble > span {
-  color: #56766f;
+  color: #315f59;
+  font-weight: 700;
 }
 
 .pending-bubble {

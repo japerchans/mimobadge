@@ -1,10 +1,24 @@
 "use client";
 import type { Information, Resident, WorkspaceResponse } from "@/types";
-import { ChevronRight, FileText, MessageCircle } from "lucide-react";
+import {
+  Brain,
+  ChevronRight,
+  FileText,
+  MessageCircle,
+  Send,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ja } from "@/lib/ja";
-import { Avatar, Empty, formatDate, isToday, Status, time } from "./shared";
+import {
+  Avatar,
+  CaregiverAvatar,
+  Empty,
+  formatDate,
+  isToday,
+  Status,
+  time,
+} from "./shared";
 export function ResidentWorkspace({
   resident: r,
   data,
@@ -14,9 +28,82 @@ export function ResidentWorkspace({
   data: WorkspaceResponse;
   inspect: (item: Information) => void;
 }) {
-  const [tab, setTab] = useState("history");
+  const [tab, setTab] = useState("chat");
+  const [question, setQuestion] = useState("");
+  const [askedQuestion, setAskedQuestion] = useState("");
   const items = data.information.filter((i) => i.residentId === r.id);
   const profile = items.filter((i) => i.kind === "profile");
+  const careItems = items.filter((i) => i.kind === "care");
+  const graphNodes = data.memoryNodes.filter(
+    (node) => node.residentId === r.id,
+  );
+  const graphEpisodes = data.memoryEpisodes.filter(
+    (episode) => episode.residentId === r.id,
+  );
+  const graphAnswer = useMemo(() => {
+    const lower = askedQuestion.toLocaleLowerCase("ja");
+    const byCategory = (category: string) =>
+      profile
+        .filter((item) => item.category === category)
+        .map((item) => item.content);
+    if (!askedQuestion)
+      return [
+        `${r.name}さんについて、確認済みの記録と記憶グラフから大事な情報だけをまとめます。`,
+        profile
+          .slice(0, 3)
+          .map((item) => `${ja(item.category)}：${item.content}`)
+          .join("\n"),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    if (lower.includes("家族") || lower.includes("family"))
+      return (
+        byCategory("Family").join("\n") ||
+        "家族に関する確認済み情報はまだ少ないです。"
+      );
+    if (
+      lower.includes("好き") ||
+      lower.includes("趣味") ||
+      lower.includes("interest")
+    )
+      return (
+        byCategory("Interests").join("\n") ||
+        "好きなことはまだ確認済み情報にありません。"
+      );
+    if (
+      lower.includes("今日") ||
+      lower.includes("状態") ||
+      lower.includes("様子")
+    )
+      return careItems
+        .slice()
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 3)
+        .map((item) => `${formatDate(item.updatedAt)}：${item.content}`)
+        .join("\n");
+    if (
+      lower.includes("記憶") ||
+      lower.includes("memory") ||
+      lower.includes("関係")
+    )
+      return graphNodes.length
+        ? graphNodes
+            .slice(0, 6)
+            .map(
+              (node) =>
+                `${node.label}（${ja(node.type)}・${node.mentionCount}回）`,
+            )
+            .join("\n")
+        : "記憶グラフに表示できるノードはまだありません。";
+    return (
+      [...profile, ...careItems]
+        .filter((item) => item.content.includes(askedQuestion.slice(0, 4)))
+        .slice(0, 4)
+        .map((item) => `${ja(item.category)}：${item.content}`)
+        .join("\n") ||
+      "近い情報は見つかりませんでした。プロフィールか記録を開いて確認してください。"
+    );
+  }, [askedQuestion, careItems, graphNodes, profile, r.name]);
   const pending = data.recordings.filter(
     (x) => x.residentId === r.id && x.status !== "completed",
   );
@@ -42,6 +129,7 @@ export function ResidentWorkspace({
       </div>
       <div className="tabs" role="tablist" aria-label="表示する情報">
         {[
+          ["chat", "AIメモ"],
           ["today", "今日の記録"],
           ["history", "これまでの記録"],
           ["profile", "プロフィール"],
@@ -83,7 +171,71 @@ export function ResidentWorkspace({
               </span>
             </Link>
           ))}
-          {tab === "profile" ? (
+          {tab === "chat" ? (
+            <section className="ai-memory-chat" aria-label="AIメモ">
+              <div className="ai-message">
+                <span className="ai-avatar">
+                  <Brain size={18} />
+                </span>
+                <div>
+                  <strong>ここログAI</strong>
+                  <p>{graphAnswer}</p>
+                </div>
+              </div>
+              {graphEpisodes[0] && (
+                <button
+                  className="memory-bubble compact"
+                  onClick={() => {
+                    const source = profile.find(
+                      (item) =>
+                        item.recordingId === graphEpisodes[0].recordingId,
+                    );
+                    if (source) inspect(source);
+                  }}
+                >
+                  <span>記憶グラフの根拠</span>
+                  <p>{graphEpisodes[0].summary}</p>
+                  <small>
+                    出典を確認
+                    <ChevronRight size={13} />
+                  </small>
+                </button>
+              )}
+              <form
+                className="ai-question-box"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const next = question.trim();
+                  if (!next) return;
+                  setAskedQuestion(next);
+                  setQuestion("");
+                }}
+              >
+                <MessageCircle size={18} />
+                <input
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  placeholder="家族、好きなこと、今日の様子などを質問"
+                  aria-label={`${r.name}さんについて質問`}
+                />
+                <button type="submit" aria-label="質問する">
+                  <Send size={16} />
+                </button>
+              </form>
+              <div className="quick-questions" aria-label="よく使う質問">
+                {[
+                  "家族に伝えること",
+                  "好きなこと",
+                  "今日の様子",
+                  "記憶グラフ",
+                ].map((sample) => (
+                  <button key={sample} onClick={() => setAskedQuestion(sample)}>
+                    {sample}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : tab === "profile" ? (
             <>
               <p className="muted">
                 項目を選ぶと、出典の確認・編集・削除ができます。
@@ -115,12 +267,15 @@ export function ResidentWorkspace({
                     {formatDate(event.createdAt)} · {time(event.createdAt)}
                   </div>
                   <div className="entry-author">
-                    <span className="staff-avatar">
-                      {
-                        data.caregivers.find((c) => c.id === event.caregiverId)
-                          ?.name[0]
-                      }
-                    </span>
+                    {data.caregivers.find(
+                      (c) => c.id === event.caregiverId,
+                    ) && (
+                      <CaregiverAvatar
+                        caregiver={data.caregivers.find(
+                          (c) => c.id === event.caregiverId,
+                        )!}
+                      />
+                    )}
                     <span>
                       {
                         data.caregivers.find((c) => c.id === event.caregiverId)
@@ -187,11 +342,11 @@ export function ResidentWorkspace({
               );
             })
           )}
-          {tab !== "profile" && !events.length && (
+          {tab !== "chat" && tab !== "profile" && !events.length && (
             <Empty>この期間の確定した記録はありません。</Empty>
           )}
         </section>
-        {tab !== "profile" && (
+        {tab !== "chat" && tab !== "profile" && (
           <aside className="person-context">
             <h2>この方について</h2>
             {profile.slice(0, 4).map((i) => (

@@ -32,7 +32,7 @@ const labels: Record<string, string> = {
   Settings: "設定",
   "Recording review": "録音の確認",
   "Not found": "見つかりません",
-  MimoBadge: "こころん",
+  MimoBadge: "ここログ",
   "Sakura Care Home": "さくらケアホーム",
   "Facility workspace": "介護記録",
   "Find a resident or staff member": "入居者・職員を検索",
@@ -271,6 +271,10 @@ const labels: Record<string, string> = {
   "Deleted resident information": "入居者情報を削除",
   "Edited resident information": "入居者情報を編集",
   "Generated handoff from approved information": "申し送りを作成",
+  person: "人",
+  place: "場所",
+  event: "出来事",
+  time: "時期",
 };
 export function ja(value: string): string {
   if (labels[value]) return labels[value];

@@ -1,6 +1,11 @@
 "use client";
 import { ja } from "@/lib/ja";
-import type { Recording, Resident, WorkspaceResponse } from "@/types";
+import type {
+  Caregiver,
+  Recording,
+  Resident,
+  WorkspaceResponse,
+} from "@/types";
 import { ChevronRight, Inbox, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -49,8 +54,37 @@ export function Avatar({
   large?: boolean;
 }) {
   return (
-    <span className={`avatar ${resident.id} ${large ? "large" : ""}`}>
-      {resident.initials}
+    <span
+      className={`face-icon avatar ${resident.id} ${large ? "large" : ""}`}
+      aria-label={resident.name}
+      title={resident.name}
+    >
+      <span className="face-hair" />
+      <span className="face-eye left" />
+      <span className="face-eye right" />
+      <span className="face-mouth" />
+      <span className="sr-only">{resident.name}</span>
+    </span>
+  );
+}
+export function CaregiverAvatar({
+  caregiver,
+  large = false,
+}: {
+  caregiver: Caregiver;
+  large?: boolean;
+}) {
+  return (
+    <span
+      className={`face-icon staff-avatar caregiver-${caregiver.id} ${large ? "large" : ""}`}
+      aria-label={caregiver.name}
+      title={caregiver.name}
+    >
+      <span className="face-hair" />
+      <span className="face-eye left" />
+      <span className="face-eye right" />
+      <span className="face-mouth" />
+      <span className="sr-only">{caregiver.name}</span>
     </span>
   );
 }

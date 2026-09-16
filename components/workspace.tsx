@@ -28,7 +28,7 @@ import {
 import { InformationDetail } from "./information-detail";
 import { RecordingWorkspace } from "./recording-workspace";
 import { ResidentWorkspace } from "./resident-workspace";
-import { Avatar, Empty, Modal } from "./shared";
+import { Avatar, CaregiverAvatar, Empty, Modal } from "./shared";
 export const nav = [
   { href: "/", label: "確認待ち", icon: LayoutDashboard },
   { href: "/residents", label: "入居者", icon: UsersRound },
@@ -92,8 +92,8 @@ export function WorkspaceApp() {
   if (!data)
     return (
       <main className="boot">
-        <img src="/icon.svg" width="42" height="42" alt="" />
-        <h1>こころん</h1>
+        <img src="/icon.png" width="42" height="42" alt="" />
+        <h1>ここログ</h1>
         {error ? (
           <>
             <p role="alert">{ja(error)}</p>
@@ -153,8 +153,8 @@ export function WorkspaceApp() {
       >
         <div className="sidebar-brand-row">
           <Link className="brand" href="/">
-            <img src="/icon.svg" width="32" height="32" alt="" />
-            <span>こころん</span>
+            <img src="/icon.png" width="32" height="32" alt="" />
+            <span>ここログ</span>
           </Link>
           <button
             className="icon-button sidebar-close"
@@ -227,7 +227,7 @@ export function WorkspaceApp() {
             設定・利用情報
           </Link>
           <div className="current-user">
-            <span className="staff-avatar">青</span>
+            <CaregiverAvatar caregiver={data.caregivers[0]} />
             <div>
               青木 美咲<small>介護職員 · 日勤</small>
             </div>
@@ -287,7 +287,7 @@ export function WorkspaceApp() {
           )}
         </main>
         <footer className="app-footer">
-          <span>こころん</span>
+          <span>ここログ</span>
           <span>デモデータを使用しています</span>
         </footer>
       </div>
