@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 import { ChevronRight, Inbox, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 export const formatDate = (value: string, opts?: Intl.DateTimeFormatOptions) =>
   new Date(value).toLocaleDateString("ja-JP", {
     month: "short",
@@ -53,12 +53,18 @@ export function Avatar({
   resident: Resident;
   large?: boolean;
 }) {
-  return (
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <span className={`avatar ${large ? "large" : ""}`}>
+      {resident.initials || resident.name.slice(0, 1)}
+    </span>
+  ) : (
     <img
       className={`avatar portrait ${large ? "large" : ""}`}
       src={`/avatars/${resident.id}.png`}
       alt=""
       aria-hidden="true"
+      onError={() => setFailed(true)}
     />
   );
 }
@@ -162,6 +168,13 @@ export function RecordingRow({
           {time(r.createdAt)} <span>·</span> {duration(r.duration)}{" "}
           <span>·</span>{" "}
           {data.caregivers.find((c) => c.id === r.caregiverId)?.name}
+          {r.source === "sd-card" && (
+            <>
+              {" "}
+              <span>·</span> SDカード
+              {r.sourceName ? ` · ${r.sourceName}` : ""}
+            </>
+          )}
         </small>
       </div>
       <Status value={r.status} />

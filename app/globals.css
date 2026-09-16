@@ -457,6 +457,10 @@ small,
 }
 .heading-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .panel {
   border: 1px solid #3a3a3a;
@@ -1329,6 +1333,11 @@ dialog::backdrop {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 .dialog-actions {
   display: flex;

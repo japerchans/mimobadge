@@ -6,9 +6,11 @@ import {
   Cable,
   Check,
   FileText,
+  FolderOpen,
   LayoutDashboard,
   PanelLeft,
   PanelLeftClose,
+  Plus,
   Settings,
   UsersRound,
   X,
@@ -41,11 +43,22 @@ export function WorkspaceApp() {
   const [toast, setToast] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [transfer, setTransfer] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [addingResident, setAddingResident] = useState(false);
   const [selected, setSelected] = useState("tanaka");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [newResident, setNewResident] = useState({
+    name: "",
+    kana: "",
+    age: "85",
+    room: "",
+    caregiverId: "aoki",
+  });
   const [busy, setBusy] = useState(false);
   const [item, setItem] = useState<Information | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const decodedPathname = decodeURI(pathname);
   const refresh = useCallback(async () => {
     const res = await fetch("/api/workspace", { cache: "no-store" });
     if (res.status === 401) {
@@ -111,7 +124,7 @@ export function WorkspaceApp() {
       </main>
     );
   const resident = data.residents.find(
-    (r) => pathname === `/residents/${r.id}`,
+    (r) => decodedPathname === `/residents/${r.id}`,
   );
   const recording = data.recordings.find(
     (r) => pathname === `/processing/${r.id}`,
@@ -267,9 +280,13 @@ export function WorkspaceApp() {
           ) : pathname === "/" || pathname === "/dashboard" ? (
             <Dashboard data={data} />
           ) : pathname === "/processing" ? (
-            <Recordings data={data} onTransfer={() => setTransfer(true)} />
+            <Recordings
+              data={data}
+              onTransfer={() => setTransfer(true)}
+              onImport={() => setImporting(true)}
+            />
           ) : pathname === "/residents" ? (
-            <Residents data={data} />
+            <Residents data={data} onAdd={() => setAddingResident(true)} />
           ) : pathname === "/records" ? (
             <Records data={data} />
           ) : pathname === "/handoffs" ? (
@@ -356,6 +373,222 @@ export function WorkspaceApp() {
             >
               <Cable size={16} />
               {busy ? "追加中…" : "録音を追加"}
+            </button>
+          </div>
+        </Modal>
+      )}
+      {importing && (
+        <Modal
+          title="SDカードから取り込む"
+          close={() => !busy && setImporting(false)}
+        >
+          <div className="dialog-body">
+            <div className="transfer-icon">
+              <FolderOpen size={30} />
+            </div>
+            <p>
+              SDカード、USB、または端末内の音声ファイルを選ぶと、ここログ内で文字起こしして確認待ちに追加します。
+            </p>
+            <label>
+              会話した入居者
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+              >
+                {data.residents.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · 居室 {r.room}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              音声ファイル
+              <input
+                type="file"
+                accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg,.aac,.flac"
+                onChange={(event) =>
+                  setImportFile(event.target.files?.[0] || null)
+                }
+              />
+            </label>
+            <p className="muted small">
+              取り込めるサイズは24MBまでです。文字起こし後の会話全文は、記録確定後または7日後に削除されます。
+            </p>
+            {error && (
+              <p role="alert" className="error">
+                {ja(error)}
+              </p>
+            )}
+          </div>
+          <div className="dialog-actions">
+            <button onClick={() => setImporting(false)} disabled={busy}>
+              キャンセル
+            </button>
+            <button
+              className="primary"
+              disabled={busy || !importFile || !selected}
+              onClick={async () => {
+                if (!importFile) return;
+                setBusy(true);
+                setError("");
+                try {
+                  const form = new FormData();
+                  form.set("residentId", selected);
+                  form.set("file", importFile);
+                  const response = await fetch("/api/import-recording", {
+                    method: "POST",
+                    body: form,
+                  });
+                  const result = await response.json();
+                  if (!response.ok) throw new Error(ja(result.error));
+                  await refresh();
+                  setToast("音声を文字起こしして確認待ちに追加しました");
+                  setImportFile(null);
+                  setImporting(false);
+                  router.push(`/processing/${result.id}`);
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <FolderOpen size={16} />
+              {busy ? "取り込み中…" : "取り込んで文字起こし"}
+            </button>
+          </div>
+        </Modal>
+      )}
+      {addingResident && (
+        <Modal
+          title="入居者を追加"
+          close={() => !busy && setAddingResident(false)}
+        >
+          <div className="dialog-body">
+            <label>
+              名前
+              <input
+                value={newResident.name}
+                onChange={(e) =>
+                  setNewResident((current) => ({
+                    ...current,
+                    name: e.target.value,
+                  }))
+                }
+                placeholder="例：高橋 春子"
+              />
+            </label>
+            <label>
+              よみ
+              <input
+                value={newResident.kana}
+                onChange={(e) =>
+                  setNewResident((current) => ({
+                    ...current,
+                    kana: e.target.value,
+                  }))
+                }
+                placeholder="例：たかはし はるこ"
+              />
+            </label>
+            <div className="form-grid">
+              <label>
+                年齢
+                <input
+                  inputMode="numeric"
+                  value={newResident.age}
+                  onChange={(e) =>
+                    setNewResident((current) => ({
+                      ...current,
+                      age: e.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                居室
+                <input
+                  value={newResident.room}
+                  onChange={(e) =>
+                    setNewResident((current) => ({
+                      ...current,
+                      room: e.target.value,
+                    }))
+                  }
+                  placeholder="207"
+                />
+              </label>
+            </div>
+            <label>
+              主担当
+              <select
+                value={newResident.caregiverId}
+                onChange={(e) =>
+                  setNewResident((current) => ({
+                    ...current,
+                    caregiverId: e.target.value,
+                  }))
+                }
+              >
+                {data.caregivers.map((caregiver) => (
+                  <option key={caregiver.id} value={caregiver.id}>
+                    {caregiver.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {error && (
+              <p role="alert" className="error">
+                {ja(error)}
+              </p>
+            )}
+          </div>
+          <div className="dialog-actions">
+            <button onClick={() => setAddingResident(false)} disabled={busy}>
+              キャンセル
+            </button>
+            <button
+              className="primary"
+              disabled={
+                busy ||
+                !newResident.name.trim() ||
+                !newResident.kana.trim() ||
+                !newResident.room.trim()
+              }
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  const result = await action(
+                    {
+                      type: "create-resident",
+                      name: newResident.name,
+                      kana: newResident.kana,
+                      age: Number(newResident.age),
+                      room: newResident.room,
+                      caregiverId: newResident.caregiverId,
+                    },
+                    "入居者を追加しました",
+                  );
+                  setNewResident({
+                    name: "",
+                    kana: "",
+                    age: "85",
+                    room: "",
+                    caregiverId: data.caregivers[0]?.id || "",
+                  });
+                  setAddingResident(false);
+                  router.push(`/residents/${result.id}`);
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <Plus size={16} />
+              {busy ? "追加中…" : "追加する"}
             </button>
           </div>
         </Modal>

@@ -7,6 +7,7 @@ import {
   CircleHelp,
   Download,
   FileText,
+  FolderOpen,
   LogOut,
   Plus,
   Search,
@@ -27,9 +28,11 @@ import {
 export function Recordings({
   data,
   onTransfer,
+  onImport,
 }: {
   data: WorkspaceResponse;
   onTransfer: () => void;
+  onImport: () => void;
 }) {
   const [filter, setFilter] = useState("all");
   const rows = data.recordings
@@ -47,6 +50,10 @@ export function Recordings({
         title="録音一覧"
         description="録音を選んで内容を確認し、介護記録を確定します。"
       >
+        <button className="primary" onClick={onImport}>
+          <FolderOpen size={16} />
+          SDカードから取り込む
+        </button>
         <button className="primary" onClick={onTransfer}>
           <Plus size={16} />
           デモ録音を追加
@@ -81,7 +88,7 @@ export function Recordings({
       <section className="panel">
         <div className="panel-header">
           <h2>{filter === "pending" ? "確認待ちの録音" : "録音履歴"}</h2>
-          <span className="muted small">デモ用の録音データ</span>
+          <span className="muted small">SDカード・デモ録音</span>
         </div>
         {rows.map((r) => (
           <div key={r.id}>
@@ -94,14 +101,25 @@ export function Recordings({
     </>
   );
 }
-export function Residents({ data }: { data: WorkspaceResponse }) {
+export function Residents({
+  data,
+  onAdd,
+}: {
+  data: WorkspaceResponse;
+  onAdd: () => void;
+}) {
   const [query, setQuery] = useState("");
   return (
     <>
       <PageHeading
         title="入居者"
         description="名前を選ぶと、その方の記録とプロフィールを開けます。"
-      />
+      >
+        <button className="primary" onClick={onAdd}>
+          <Plus size={16} />
+          入居者を追加
+        </button>
+      </PageHeading>
       <label className="search page-search">
         <Search size={17} />
         <input
@@ -393,7 +411,7 @@ export function SettingsPage({ data }: { data: WorkspaceResponse }) {
                 : "この端末のデモファイル"}
             </dd>
             <dt>音声の処理</dt>
-            <dd>デモ処理（実際の音声解析は未接続）</dd>
+            <dd>SDカード音声はOpenAIで文字起こし。デモ録音も利用できます。</dd>
             <dt>会話全文の保存期間</dt>
             <dd>記録確定後、または7日後に削除</dd>
             <dt>入居者情報の保存</dt>

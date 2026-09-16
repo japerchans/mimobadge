@@ -127,6 +127,41 @@ test("cross-facility and viewer writes are denied", async () => {
     /permission/,
   );
 });
+test("caregivers can add residents while keeping rooms unique", async () => {
+  const state = seedWorkspace();
+  const result = await executeAction(
+    state,
+    {
+      type: "create-resident",
+      name: "高橋 春子",
+      kana: "たかはし はるこ",
+      age: 87,
+      room: "207",
+      caregiverId: "aoki",
+    },
+    session,
+  );
+  const resident = state.residents.find((r) => r.id === result.id);
+  assert.match(result.id, /^resident-/);
+  assert.equal(resident?.name, "高橋 春子");
+  assert.equal(resident?.room, "207");
+  assert.ok(state.audit.some((a) => a.action === "Added resident"));
+  await assert.rejects(
+    executeAction(
+      state,
+      {
+        type: "create-resident",
+        name: "別の方",
+        kana: "べつのかた",
+        age: 80,
+        room: "207",
+        caregiverId: "aoki",
+      },
+      session,
+    ),
+    /room/,
+  );
+});
 test("unknown and unassigned residents cannot process; reassignment invalidates draft", async () => {
   const state = seedWorkspace();
   const { id } = await executeAction(

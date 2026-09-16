@@ -12,6 +12,9 @@ const labels: Record<string, string> = {
   "You do not have permission to make changes.": "変更する権限がありません。",
   "Recording not found.": "録音が見つかりません。",
   "Resident not found.": "入居者が見つかりません。",
+  "Caregiver not found.": "担当職員が見つかりません。",
+  "This room already has a resident.":
+    "この居室にはすでに入居者が登録されています。",
   "A finalized recording cannot be reassigned.":
     "確定済みの記録は別の入居者に変更できません。",
   "Select a resident before processing.":
@@ -217,6 +220,8 @@ const labels: Record<string, string> = {
     "すべて架空のデータです。実運用には個人別ログイン、定期削除、音声解析サービスの接続が必要です。",
   "Recent activity": "操作履歴",
   "Audit log": "操作記録",
+  "Added resident": "入居者を追加",
+  "Imported SD card recording": "SDカード録音を取り込み",
   "Review or edit information to see activity here.":
     "確認・編集の操作を行うと、履歴が表示されます。",
   "Sign out": "ログアウト",

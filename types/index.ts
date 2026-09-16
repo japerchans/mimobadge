@@ -44,7 +44,8 @@ export type Recording = {
   draft: string;
   context: string[];
   error?: string;
-  source: "demo";
+  source: "demo" | "sd-card";
+  sourceName?: string;
   retentionUntil: string;
   revision: number;
 };

@@ -9,6 +9,14 @@ import {
 import { rebuildMemoryGraph } from "./memory-graph";
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("transfer"), residentId: z.string().nullable() }),
+  z.object({
+    type: z.literal("create-resident"),
+    name: z.string().trim().min(1).max(80),
+    kana: z.string().trim().min(1).max(120),
+    age: z.number().int().min(0).max(130),
+    room: z.string().trim().min(1).max(20),
+    caregiverId: z.string(),
+  }),
   z.object({ type: z.literal("process"), id: z.string() }),
   z.object({
     type: z.literal("associate"),
@@ -102,6 +110,28 @@ export async function executeAction(
     if (!r) throw new DomainError("Recording not found.", 404);
     return r;
   };
+  if (input.type === "create-resident") {
+    if (!state.caregivers.some((c) => c.id === input.caregiverId))
+      throw new DomainError("Caregiver not found.");
+    if (state.residents.some((r) => r.room === input.room))
+      throw new DomainError("This room already has a resident.");
+    const id = `resident-${crypto.randomUUID().slice(0, 8)}`;
+    const uniqueId = state.residents.some((r) => r.id === id)
+      ? `${id}-${crypto.randomUUID().slice(0, 4)}`
+      : id;
+    state.residents.push({
+      id: uniqueId,
+      name: input.name,
+      kana: input.kana,
+      age: input.age,
+      room: input.room,
+      caregiverId: input.caregiverId,
+      since: now.slice(0, 10),
+      initials: input.name.replace(/\s/g, "").slice(0, 1) || "人",
+    });
+    audit("Added resident", uniqueId);
+    return { id: uniqueId };
+  }
   if (input.type === "transfer") {
     if (
       input.residentId &&
