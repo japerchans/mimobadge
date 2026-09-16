@@ -82,3 +82,13 @@
 | P1       | 共通             | Noto Sans JP を使い、薄いグレーと細い文字を強める                  | 長時間見る業務画面で読み取り負担を下げる               | `app/layout.tsx`、`app/globals.css`        |
 
 入居者ページの主操作は「AIメモで聞く」。今日の記録、これまでの記録、プロフィールはタブで残し、根拠確認は既存の情報詳細に送る。削除したものはない。390px幅とデスクトップで、入居者ページ、AIメモの質問、記憶グラフ回答、メニュー表示を確認する。
+
+### Supplied logo and conversational layout
+
+| Priority | Page             | Decision                                                          | Why                                                                | Evidence                                                            |
+| -------- | ---------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| P1       | Resident AI chat | Use full width and retain each question/answer                    | Make the conversation legible and remove the unused sidebar column | ResidentWorkspace previously replaced the answer and reserved 245px |
+| P1       | Resident AI chat | Blue canvas, white AI bubbles, blue user bubbles; bottom composer | Distinguish speakers and keep the primary action available         | Desktop and narrow layout checks                                    |
+| P2       | App shell        | Supplied logo, blue navigation and coral AI avatar                | Carry the user's brand into the screen                             |
+
+Primary action: ask about the resident. Suggestions disappear after the first question. Standalone episode teaser and pending recording cards are removed from the chat; source records remain available through the existing record/profile tabs. Verify multiple turns, blank submission prevention, full-width layout and mobile overflow.

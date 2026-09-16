@@ -8,7 +8,7 @@ import {
   Send,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ja } from "@/lib/ja";
 import {
   Avatar,
@@ -30,17 +30,21 @@ export function ResidentWorkspace({
 }) {
   const [tab, setTab] = useState("chat");
   const [question, setQuestion] = useState("");
-  const [askedQuestion, setAskedQuestion] = useState("");
+  const [messages, setMessages] = useState<
+    { question: string; answer: string }[]
+  >([]);
+  const messageEnd = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (messages.length)
+      messageEnd.current?.scrollIntoView({ block: "nearest" });
+  }, [messages]);
   const items = data.information.filter((i) => i.residentId === r.id);
   const profile = items.filter((i) => i.kind === "profile");
   const careItems = items.filter((i) => i.kind === "care");
   const graphNodes = data.memoryNodes.filter(
     (node) => node.residentId === r.id,
   );
-  const graphEpisodes = data.memoryEpisodes.filter(
-    (episode) => episode.residentId === r.id,
-  );
-  const graphAnswer = useMemo(() => {
+  const answerQuestion = (askedQuestion: string) => {
     const lower = askedQuestion.toLocaleLowerCase("ja");
     const byCategory = (category: string) =>
       profile
@@ -103,7 +107,20 @@ export function ResidentWorkspace({
         .join("\n") ||
       "近い情報は見つかりませんでした。プロフィールか記録を開いて確認してください。"
     );
-  }, [askedQuestion, careItems, graphNodes, profile, r.name]);
+  };
+  const ask = (text: string) => {
+    const next = text.trim();
+    if (!next) return;
+    setMessages((previous) => [
+      ...previous,
+      {
+        question: next,
+        answer:
+          answerQuestion(next) || "該当する確認済みの記録はまだありません。",
+      },
+    ]);
+    setQuestion("");
+  };
   const pending = data.recordings.filter(
     (x) => x.residentId === r.id && x.status !== "completed",
   );
@@ -145,95 +162,111 @@ export function ResidentWorkspace({
           </button>
         ))}
       </div>
-      <div className="resident-thread-layout">
+      <div
+        className={`resident-thread-layout${tab === "chat" ? " chat-layout" : ""}`}
+      >
         <section className="conversation-feed">
-          {pending.map((recording) => (
-            <Link
-              className="pending-bubble"
-              href={`/processing/${recording.id}`}
-              key={recording.id}
-            >
-              <FileText size={20} />
-              <div>
-                <strong>
-                  {formatDate(recording.createdAt)} {time(recording.createdAt)}{" "}
-                  の会話
-                </strong>
-                <p>
-                  {recording.status === "review"
-                    ? "内容を確認して記録を確定してください。"
-                    : "録音の内容を整理して、記録の下書きを作成します。"}
-                </p>
-              </div>
-              <span>
-                確認する
-                <ChevronRight size={16} />
-              </span>
-            </Link>
-          ))}
+          {tab !== "chat" &&
+            pending.map((recording) => (
+              <Link
+                className="pending-bubble"
+                href={`/processing/${recording.id}`}
+                key={recording.id}
+              >
+                <FileText size={20} />
+                <div>
+                  <strong>
+                    {formatDate(recording.createdAt)}{" "}
+                    {time(recording.createdAt)} の会話
+                  </strong>
+                  <p>
+                    {recording.status === "review"
+                      ? "内容を確認して記録を確定してください。"
+                      : "録音の内容を整理して、記録の下書きを作成します。"}
+                  </p>
+                </div>
+                <span>
+                  確認する
+                  <ChevronRight size={16} />
+                </span>
+              </Link>
+            ))}
           {tab === "chat" ? (
             <section className="ai-memory-chat" aria-label="AIメモ">
-              <div className="ai-message">
-                <span className="ai-avatar">
-                  <Brain size={18} />
-                </span>
-                <div>
-                  <strong>ここログAI</strong>
-                  <p>{graphAnswer}</p>
+              <div
+                className="chat-messages"
+                role="log"
+                aria-label="ここログAIとの会話"
+                aria-live="polite"
+              >
+                <div className="ai-message">
+                  <span className="ai-avatar">
+                    <Brain size={18} />
+                  </span>
+                  <div>
+                    <strong>ここログAI</strong>
+                    <p>{answerQuestion("")}</p>
+                  </div>
                 </div>
+                {messages.map((message, index) => (
+                  <div className="chat-turn" key={index}>
+                    <div className="user-message">
+                      <strong>あなた</strong>
+                      <p>{message.question}</p>
+                    </div>
+                    <div className="ai-message">
+                      <span className="ai-avatar">
+                        <Brain size={18} />
+                      </span>
+                      <div>
+                        <strong>ここログAI</strong>
+                        <p>{message.answer}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messageEnd} />
               </div>
-              {graphEpisodes[0] && (
-                <button
-                  className="memory-bubble compact"
-                  onClick={() => {
-                    const source = profile.find(
-                      (item) =>
-                        item.recordingId === graphEpisodes[0].recordingId,
-                    );
-                    if (source) inspect(source);
+              <div className="chat-composer">
+                {messages.length === 0 && (
+                  <div className="quick-questions" aria-label="よく使う質問">
+                    {[
+                      "家族に伝えること",
+                      "好きなこと",
+                      "今日の様子",
+                      "記憶グラフ",
+                    ].map((sample) => (
+                      <button key={sample} onClick={() => ask(sample)}>
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <form
+                  className="ai-question-box"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const next = question.trim();
+                    if (!next) return;
+                    ask(next);
                   }}
                 >
-                  <span>記憶グラフの根拠</span>
-                  <p>{graphEpisodes[0].summary}</p>
-                  <small>
-                    出典を確認
-                    <ChevronRight size={13} />
-                  </small>
-                </button>
-              )}
-              <div className="quick-questions" aria-label="よく使う質問">
-                {[
-                  "家族に伝えること",
-                  "好きなこと",
-                  "今日の様子",
-                  "記憶グラフ",
-                ].map((sample) => (
-                  <button key={sample} onClick={() => setAskedQuestion(sample)}>
-                    {sample}
+                  <MessageCircle size={18} />
+                  <input
+                    value={question}
+                    onChange={(event) => setQuestion(event.target.value)}
+                    placeholder="家族、好きなこと、今日の様子などを質問"
+                    aria-label={`${r.name}さんについて質問`}
+                  />
+                  <button
+                    type="submit"
+                    aria-label="質問する"
+                    disabled={!question.trim()}
+                  >
+                    <Send size={16} />
                   </button>
-                ))}
+                </form>
               </div>
-              <form
-                className="ai-question-box"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const next = question.trim();
-                  if (!next) return;
-                  setAskedQuestion(next);
-                  setQuestion("");
-                }}
-              >
-                <MessageCircle size={18} />
-                <input
-                  value={question}
-                  onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="家族、好きなこと、今日の様子などを質問"
-                  aria-label={`${r.name}さんについて質問`}
-                />
-                <button type="submit" aria-label="質問する">
-                  <Send size={16} />
-                </button>
-              </form>
             </section>
           ) : tab === "profile" ? (
             <>
