@@ -27,8 +27,7 @@ export default function Login() {
           }
         }}
       >
-        <img src="/icon.png" width="40" height="40" alt="" />
-        <h1>ここログ</h1>
+        <img src="/logo.png" width="220" height="62" alt="ここログ" />
         <p>施設のデモ環境にログインします。</p>
         <label>
           施設のアクセスコード

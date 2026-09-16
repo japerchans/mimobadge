@@ -201,6 +201,18 @@ export function ResidentWorkspace({
                   </small>
                 </button>
               )}
+              <div className="quick-questions" aria-label="よく使う質問">
+                {[
+                  "家族に伝えること",
+                  "好きなこと",
+                  "今日の様子",
+                  "記憶グラフ",
+                ].map((sample) => (
+                  <button key={sample} onClick={() => setAskedQuestion(sample)}>
+                    {sample}
+                  </button>
+                ))}
+              </div>
               <form
                 className="ai-question-box"
                 onSubmit={(event) => {
@@ -222,18 +234,6 @@ export function ResidentWorkspace({
                   <Send size={16} />
                 </button>
               </form>
-              <div className="quick-questions" aria-label="よく使う質問">
-                {[
-                  "家族に伝えること",
-                  "好きなこと",
-                  "今日の様子",
-                  "記憶グラフ",
-                ].map((sample) => (
-                  <button key={sample} onClick={() => setAskedQuestion(sample)}>
-                    {sample}
-                  </button>
-                ))}
-              </div>
             </section>
           ) : tab === "profile" ? (
             <>

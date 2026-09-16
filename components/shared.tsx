@@ -54,17 +54,12 @@ export function Avatar({
   large?: boolean;
 }) {
   return (
-    <span
-      className={`face-icon avatar ${resident.id} ${large ? "large" : ""}`}
-      aria-label={resident.name}
-      title={resident.name}
-    >
-      <span className="face-hair" />
-      <span className="face-eye left" />
-      <span className="face-eye right" />
-      <span className="face-mouth" />
-      <span className="sr-only">{resident.name}</span>
-    </span>
+    <img
+      className={`avatar portrait ${large ? "large" : ""}`}
+      src={`/avatars/${resident.id}.png`}
+      alt=""
+      aria-hidden="true"
+    />
   );
 }
 export function CaregiverAvatar({
@@ -75,17 +70,12 @@ export function CaregiverAvatar({
   large?: boolean;
 }) {
   return (
-    <span
-      className={`face-icon staff-avatar caregiver-${caregiver.id} ${large ? "large" : ""}`}
-      aria-label={caregiver.name}
-      title={caregiver.name}
-    >
-      <span className="face-hair" />
-      <span className="face-eye left" />
-      <span className="face-eye right" />
-      <span className="face-mouth" />
-      <span className="sr-only">{caregiver.name}</span>
-    </span>
+    <img
+      className={`staff-avatar portrait ${large ? "large" : ""}`}
+      src={`/avatars/${caregiver.id}.png`}
+      alt=""
+      aria-hidden="true"
+    />
   );
 }
 export function Empty({ children }: { children: ReactNode }) {

@@ -181,9 +181,14 @@ small,
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 0 12px;
+  padding: 0 8px;
   font-size: 19px;
   font-weight: 700;
+}
+.brand img {
+  width: 156px;
+  height: auto;
+  display: block;
 }
 .brand small {
   display: none;
@@ -304,98 +309,16 @@ small,
   font-size: 19px;
   font-weight: 600;
 }
-.face-icon {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.face-icon::before {
-  content: "";
-  position: absolute;
-  inset: 8px 7px 6px;
-  border-radius: 48% 48% 46% 46%;
-  background: #f6d9bd;
-  box-shadow: inset 0 -4px 0 rgba(80, 58, 42, 0.08);
-}
-.face-hair {
-  position: absolute;
-  top: 6px;
-  left: 10px;
-  width: 20px;
-  height: 12px;
-  border-radius: 13px 13px 7px 7px;
-  background: #5f5148;
-  z-index: 1;
-}
-.face-eye,
-.face-mouth {
-  position: absolute;
-  z-index: 2;
-  background: #17202a;
-}
-.face-eye {
-  top: 20px;
-  width: 3px;
-  height: 4px;
-  border-radius: 50%;
-}
-.face-eye.left {
-  left: 15px;
-}
-.face-eye.right {
-  right: 15px;
-}
-.face-mouth {
-  left: 17px;
-  bottom: 13px;
-  width: 7px;
-  height: 2px;
-  border-radius: 99px;
-  opacity: 0.65;
-}
-.avatar.suzuki {
-  background: #efa746;
-  color: #493011;
-}
-.avatar.sato {
-  background: #9c80e6;
-  color: #241e42;
-}
-.avatar.yamamoto {
-  background: #729ee1;
-  color: #152847;
-}
-.avatar.kobayashi {
-  background: #d88eab;
-  color: #442433;
-}
 .avatar.large {
   width: 54px;
   height: 54px;
   font-size: 23px;
 }
-.avatar.large::before {
-  inset: 10px 9px 8px;
-}
-.avatar.large .face-hair {
-  top: 8px;
-  left: 14px;
-  width: 26px;
-  height: 15px;
-}
-.avatar.large .face-eye {
-  top: 27px;
-}
-.avatar.large .face-eye.left {
-  left: 20px;
-}
-.avatar.large .face-eye.right {
-  right: 20px;
-}
-.avatar.large .face-mouth {
-  left: 23px;
-  bottom: 16px;
-  width: 8px;
+.portrait {
+  display: block;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--raised-shadow-small);
 }
 .unread {
   width: 6px;
@@ -429,62 +352,10 @@ small,
   flex-shrink: 0;
   font-size: 13px;
 }
-.staff-avatar::before {
-  inset: 6px 5px 4px;
-  background: #f4d2b5;
-}
-.staff-avatar .face-hair {
-  top: 4px;
-  left: 7px;
-  width: 15px;
-  height: 9px;
-  background: #354453;
-}
-.staff-avatar .face-eye {
-  top: 14px;
-  width: 2px;
-  height: 3px;
-}
-.staff-avatar .face-eye.left {
-  left: 11px;
-}
-.staff-avatar .face-eye.right {
-  right: 11px;
-}
-.staff-avatar .face-mouth {
-  left: 12px;
-  bottom: 9px;
-  width: 5px;
-}
 .staff-avatar.large {
   width: 52px;
   height: 52px;
   font-size: 21px;
-}
-.staff-avatar.large::before {
-  inset: 10px 9px 7px;
-}
-.staff-avatar.large .face-hair {
-  top: 8px;
-  left: 14px;
-  width: 24px;
-  height: 14px;
-}
-.staff-avatar.large .face-eye {
-  top: 25px;
-  width: 3px;
-  height: 4px;
-}
-.staff-avatar.large .face-eye.left {
-  left: 19px;
-}
-.staff-avatar.large .face-eye.right {
-  right: 19px;
-}
-.staff-avatar.large .face-mouth {
-  left: 22px;
-  bottom: 15px;
-  width: 8px;
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -766,6 +637,22 @@ button.text-link {
   gap: 34px;
   align-items: start;
 }
+.resident-heading + .tabs {
+  margin-bottom: 0;
+  padding: 13px 18px 0;
+  border: 1px solid #d8e3ea;
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: #e7eef4;
+}
+.resident-heading + .tabs + .resident-thread-layout {
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-top-color: #d3dee7;
+  border-radius: 0 0 24px 24px;
+  background: #f8fbfd;
+  box-shadow: var(--raised-shadow-small);
+}
 .conversation-feed {
   min-width: 0;
   display: flex;
@@ -843,6 +730,7 @@ button.text-link {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: calc(100dvh - 290px);
 }
 .ai-message {
   display: flex;
@@ -876,6 +764,9 @@ button.text-link {
   box-shadow: var(--inset-shadow);
 }
 .ai-question-box {
+  position: sticky;
+  bottom: 18px;
+  z-index: 2;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -894,6 +785,10 @@ button.text-link {
   background: transparent;
   box-shadow: none;
   min-width: 0;
+}
+.ai-question-box input:focus,
+.ai-question-box input:focus-visible {
+  outline: 0;
 }
 .ai-question-box button {
   width: 38px;
@@ -1841,16 +1736,6 @@ dialog::backdrop {
   .sidebar-close {
     display: inline-flex;
   }
-}
-
-.caregiver-aoki .face-hair {
-  background: #2f5d6d;
-}
-.caregiver-ito .face-hair {
-  background: #51456c;
-}
-.caregiver-nakamura .face-hair {
-  background: #6b445c;
 }
 
 .care-breakdown {

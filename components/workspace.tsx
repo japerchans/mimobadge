@@ -92,8 +92,7 @@ export function WorkspaceApp() {
   if (!data)
     return (
       <main className="boot">
-        <img src="/icon.png" width="42" height="42" alt="" />
-        <h1>ここログ</h1>
+        <img src="/logo.png" width="220" height="62" alt="ここログ" />
         {error ? (
           <>
             <p role="alert">{ja(error)}</p>
@@ -153,8 +152,7 @@ export function WorkspaceApp() {
       >
         <div className="sidebar-brand-row">
           <Link className="brand" href="/">
-            <img src="/icon.png" width="32" height="32" alt="" />
-            <span>ここログ</span>
+            <img src="/logo.png" width="156" height="44" alt="ここログ" />
           </Link>
           <button
             className="icon-button sidebar-close"
