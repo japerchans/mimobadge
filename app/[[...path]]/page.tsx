@@ -9,8 +9,12 @@ export default async function Page({
 }) {
   if (!(await getSession())) redirect("/login");
   const { path = [] } = await params;
+  const residentTabRoute =
+    path[0] === "residents" &&
+    path.length === 3 &&
+    ["records", "profile", "family"].includes(path[2]);
   if (
-    path.length > 2 ||
+    (path.length > 2 && !residentTabRoute) ||
     (path[0] &&
       ![
         "dashboard",

@@ -137,7 +137,10 @@ export function RecordingWorkspace({
             </div>
             {resident && (
               <div className="row success-links">
-                <Link className="button" href="/family">
+                <Link
+                  className="button"
+                  href={`/residents/${resident.id}/family`}
+                >
                   家族レポート
                 </Link>
                 <Link

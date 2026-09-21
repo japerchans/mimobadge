@@ -6,13 +6,10 @@ import {
   AudioLines,
   Cable,
   Check,
-  FileText,
-  Heart,
   PanelLeft,
   PanelLeftClose,
   Plus,
   Settings,
-  UsersRound,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,13 +30,10 @@ import { InformationDetail } from "./information-detail";
 import { RecordingImportDialog } from "./recording-import-dialog";
 import { RecordingWorkspace } from "./recording-workspace";
 import { ResidentWorkspace } from "./resident-workspace";
-import { CaregiverAvatar, Empty, Modal } from "./shared";
+import { Avatar, CaregiverAvatar, Empty, Modal } from "./shared";
 export const nav = [
   { href: "/", label: "会話を取り込む", icon: AudioLines },
-  { href: "/residents", label: "入居者・メモリー", icon: UsersRound },
-  { href: "/records", label: "介護記録", icon: FileText },
   { href: "/handoffs", label: "申し送り", icon: ArrowRightLeft },
-  { href: "/family", label: "家族レポート", icon: Heart },
 ];
 export function WorkspaceApp() {
   const [data, setData] = useState<WorkspaceResponse | null>(null);
@@ -126,9 +120,13 @@ export function WorkspaceApp() {
         )}
       </main>
     );
-  const resident = data.residents.find(
-    (r) => decodedPathname === `/residents/${r.id}`,
-  );
+  const resident = data.residents.find((r) => {
+    const base = `/residents/${r.id}`;
+    return decodedPathname === base || decodedPathname.startsWith(`${base}/`);
+  });
+  const residentTab = resident
+    ? decodedPathname.slice(`/residents/${resident.id}`.length + 1) || "chat"
+    : "chat";
   const recording = data.recordings.find(
     (r) => pathname === `/processing/${r.id}`,
   );
@@ -202,6 +200,41 @@ export function WorkspaceApp() {
             </Link>
           ))}
         </nav>
+        <section className="sidebar-section resident-nav">
+          <div className="section-label">
+            <Link href="/residents">入居者</Link>
+            <button
+              className="sidebar-add-resident"
+              aria-label="入居者を追加"
+              onClick={() => setAddingResident(true)}
+            >
+              <Plus size={15} />
+            </button>
+          </div>
+          <nav className="people-list" aria-label="入居者一覧">
+            {data.residents
+              .slice()
+              .sort((a, b) => a.room.localeCompare(b.room, "ja"))
+              .map((person) => (
+                <Link
+                  href={`/residents/${person.id}`}
+                  key={person.id}
+                  className={resident?.id === person.id ? "selected" : ""}
+                >
+                  <Avatar resident={person} />
+                  <span>
+                    {person.name}
+                    <small>{person.room}号室</small>
+                  </span>
+                  {data.recordings.some(
+                    (recording) =>
+                      recording.residentId === person.id &&
+                      recording.status !== "completed",
+                  ) && <i className="unread" aria-label="確認待ちあり" />}
+                </Link>
+              ))}
+          </nav>
+        </section>
         <div className="sidebar-bottom">
           <Link href="/processing">録音履歴</Link>
           <Link href="/staff">担当職員</Link>
@@ -241,6 +274,8 @@ export function WorkspaceApp() {
               resident={resident}
               data={data}
               inspect={setItem}
+              action={action}
+              activeTab={residentTab}
             />
           ) : recording ? (
             <RecordingWorkspace

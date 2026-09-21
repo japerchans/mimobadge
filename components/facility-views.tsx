@@ -365,14 +365,22 @@ export function Handoffs({
 export function FamilyReports({
   data,
   action,
+  residentId: fixedResidentId,
+  embedded = false,
 }: {
   data: WorkspaceResponse;
   action: Action;
+  residentId?: string;
+  embedded?: boolean;
 }) {
   const reports = data.handoffs
-    .filter((item) => item.kind === "family")
+    .filter(
+      (item) =>
+        item.kind === "family" &&
+        (!fixedResidentId || item.residentId === fixedResidentId),
+    )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const [residentId, setResidentId] = useState("");
+  const [residentId, setResidentId] = useState(fixedResidentId || "");
   const [editingId, setEditingId] = useState("");
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
@@ -391,47 +399,62 @@ export function FamilyReports({
       setNotice("家族向け文面をコピーしました。");
     }
   };
+  const createButton = (
+    <button
+      className="primary"
+      disabled={!residentId || busy}
+      onClick={async () => {
+        setBusy(true);
+        setError("");
+        try {
+          await action(
+            { type: "create-family-report", residentId },
+            "家族レポートの下書きを作成しました",
+          );
+          if (!fixedResidentId) setResidentId("");
+        } catch (caught) {
+          setError((caught as Error).message);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Heart size={16} />
+      {busy ? "作成中…" : "新しい下書きを作る"}
+    </button>
+  );
   return (
     <>
-      <PageHeading
-        title="家族レポート"
-        description="確認済みの会話から近況の下書きを作り、職員が確認して家族へ共有します。"
-      >
-        <select
-          aria-label="レポートを作る入居者"
-          value={residentId}
-          onChange={(event) => setResidentId(event.target.value)}
+      {embedded ? (
+        <div className="resident-section-heading">
+          <div>
+            <h2>家族レポート</h2>
+            <p className="muted">
+              確認済みの会話から下書きを作り、内容を確認して共有します。
+            </p>
+          </div>
+          {createButton}
+        </div>
+      ) : (
+        <PageHeading
+          title="家族レポート"
+          description="確認済みの会話から近況の下書きを作り、職員が確認して家族へ共有します。"
         >
-          <option value="">入居者を選択</option>
-          {data.residents.map((resident) => (
-            <option key={resident.id} value={resident.id}>
-              {resident.name} · {resident.room}号室
-            </option>
-          ))}
-        </select>
-        <button
-          className="primary"
-          disabled={!residentId || busy}
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              await action(
-                { type: "create-family-report", residentId },
-                "家族レポートの下書きを作成しました",
-              );
-              setResidentId("");
-            } catch (caught) {
-              setError((caught as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Heart size={16} />
-          {busy ? "作成中…" : "下書きを作る"}
-        </button>
-      </PageHeading>
+          <select
+            aria-label="レポートを作る入居者"
+            value={residentId}
+            onChange={(event) => setResidentId(event.target.value)}
+          >
+            <option value="">入居者を選択</option>
+            {data.residents.map((resident) => (
+              <option key={resident.id} value={resident.id}>
+                {resident.name} · {resident.room}号室
+              </option>
+            ))}
+          </select>
+          {createButton}
+        </PageHeading>
+      )}
       {error && (
         <p className="error" role="alert">
           {ja(error)}

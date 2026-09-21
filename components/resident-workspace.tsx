@@ -12,25 +12,25 @@ import { KokologMark } from "./kokolog-mark";
 import { useEffect, useRef, useState } from "react";
 import { ja } from "@/lib/ja";
 import { moodTimeline } from "@/domain/mood";
-import {
-  Avatar,
-  CaregiverAvatar,
-  Empty,
-  formatDate,
-  isToday,
-  Status,
-  time,
-} from "./shared";
+import { CareRecordView } from "./care-record-view";
+import { FamilyReports } from "./facility-views";
+import { Action, Avatar, Empty, formatDate, Status, time } from "./shared";
 export function ResidentWorkspace({
   resident: r,
   data,
   inspect,
+  action,
+  activeTab,
 }: {
   resident: Resident;
   data: WorkspaceResponse;
   inspect: (item: Information) => void;
+  action: Action;
+  activeTab: string;
 }) {
-  const [tab, setTab] = useState("chat");
+  const tab = ["chat", "records", "profile", "family"].includes(activeTab)
+    ? activeTab
+    : "chat";
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<
     { question: string; answer: string }[]
@@ -92,13 +92,8 @@ export function ResidentWorkspace({
   const pending = data.recordings.filter(
     (x) => x.residentId === r.id && x.status !== "completed",
   );
-  const events = data.recordings
-    .filter(
-      (x) =>
-        x.residentId === r.id &&
-        x.status === "completed" &&
-        (tab === "history" || isToday(x.createdAt)),
-    )
+  const records = data.records
+    .filter((record) => record.residentId === r.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <>
@@ -115,26 +110,30 @@ export function ResidentWorkspace({
       <div className="tabs" role="tablist" aria-label="表示する情報">
         {[
           ["chat", "この方について"],
-          ["today", "今日の記録"],
-          ["history", "これまでの記録"],
+          ["records", "介護記録"],
           ["profile", "プロフィール"],
+          ["family", "家族レポート"],
         ].map(([value, label]) => (
-          <button
+          <Link
             role="tab"
             aria-selected={tab === value}
             className={tab === value ? "active" : ""}
             key={value}
-            onClick={() => setTab(value)}
+            href={
+              value === "chat"
+                ? `/residents/${r.id}`
+                : `/residents/${r.id}/${value}`
+            }
           >
             {label}
-          </button>
+          </Link>
         ))}
       </div>
       <div
         className={`resident-thread-layout${tab === "chat" ? " chat-layout" : ""}`}
       >
         <section className="conversation-feed">
-          {tab !== "chat" &&
+          {tab === "records" &&
             pending.map((recording) => (
               <Link
                 className="pending-bubble"
@@ -306,112 +305,54 @@ export function ResidentWorkspace({
                 </button>
               ))}
             </>
+          ) : tab === "family" ? (
+            <FamilyReports
+              data={data}
+              action={action}
+              residentId={r.id}
+              embedded
+            />
           ) : (
-            events.map((event) => {
-              const record = data.records.find(
-                (x) => x.recordingId === event.id,
-              );
-              const notes = items.filter((i) => i.recordingId === event.id);
-              return (
-                <article className="conversation-entry" key={event.id}>
-                  <div className="conversation-date">
-                    {formatDate(event.createdAt)} · {time(event.createdAt)}
-                  </div>
-                  <div className="entry-author">
-                    {data.caregivers.find(
-                      (c) => c.id === event.caregiverId,
-                    ) && (
-                      <CaregiverAvatar
-                        caregiver={data.caregivers.find(
-                          (c) => c.id === event.caregiverId,
-                        )!}
-                      />
-                    )}
-                    <span>
-                      {
-                        data.caregivers.find((c) => c.id === event.caregiverId)
-                          ?.name
-                      }
+            records.map((record) => (
+              <article className="panel resident-record" key={record.id}>
+                <div className="panel-header">
+                  <div>
+                    <h2>{formatDate(record.createdAt)}</h2>
+                    <span className="muted small">
+                      {time(record.createdAt)} · 確認した職員：
+                      {data.caregivers.find(
+                        (caregiver) => caregiver.id === record.approvedBy,
+                      )?.name || "職員"}
                     </span>
-                    <Status value="approved" />
                   </div>
-                  <div className="record-bubble">
-                    <p>
-                      {record?.content || "プロフィールの情報を確認しました。"}
-                    </p>
-                    <Link
-                      href={`/processing/${event.id}`}
-                      className="text-link"
-                    >
-                      元の記録を開く
-                      <ChevronRight size={14} />
-                    </Link>
-                  </div>
-                  {notes
-                    .filter((i) => i.kind === "profile")
-                    .map((i) => (
-                      <button
-                        className="memory-bubble compact"
-                        key={i.id}
-                        onClick={() => inspect(i)}
-                      >
-                        <span>
-                          {i.kind === "profile"
-                            ? "プロフィールに反映"
-                            : "介護記録"}{" "}
-                          · {ja(i.category)}
-                        </span>
-                        <p>{i.content}</p>
-                        <small>
-                          出典を確認・編集
-                          <ChevronRight size={13} />
-                        </small>
-                      </button>
-                    ))}
-                  {notes.some((i) => i.kind === "care") && (
-                    <details className="care-breakdown">
-                      <summary>項目別に確認・編集</summary>
-                      {notes
-                        .filter((i) => i.kind === "care")
-                        .map((i) => (
-                          <button
-                            className="memory-bubble compact"
-                            key={i.id}
-                            onClick={() => inspect(i)}
-                          >
-                            <span>{ja(i.category)}</span>
-                            <p>{i.content}</p>
-                            <small>
-                              出典を確認・編集
-                              <ChevronRight size={13} />
-                            </small>
-                          </button>
-                        ))}
+                  <Status value="approved" />
+                </div>
+                <div className="record-content">
+                  <CareRecordView
+                    record={record.structured}
+                    empty={record.content}
+                  />
+                  {record.structured && (
+                    <details className="record-summary">
+                      <summary>経過要約</summary>
+                      <p>{record.content}</p>
                     </details>
                   )}
-                </article>
-              );
-            })
+                  <Link
+                    href={`/processing/${record.recordingId}`}
+                    className="text-link"
+                  >
+                    元の記録を開く
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+              </article>
+            ))
           )}
-          {tab !== "chat" && tab !== "profile" && !events.length && (
-            <Empty>この期間の確定した記録はありません。</Empty>
+          {tab === "records" && !records.length && (
+            <Empty>確定した介護記録はまだありません。</Empty>
           )}
         </section>
-        {tab !== "chat" && tab !== "profile" && (
-          <aside className="person-context">
-            <h2>この方について</h2>
-            {profile.slice(0, 4).map((i) => (
-              <button key={i.id} onClick={() => inspect(i)}>
-                <span>{ja(i.category)}</span>
-                <p>{i.content}</p>
-              </button>
-            ))}
-            <button className="text-link" onClick={() => setTab("profile")}>
-              プロフィールを開く
-              <ChevronRight size={14} />
-            </button>
-          </aside>
-        )}
       </div>
     </>
   );
