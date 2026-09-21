@@ -18,6 +18,7 @@ export default async function Page({
         "residents",
         "records",
         "handoffs",
+        "family",
         "staff",
         "settings",
       ].includes(path[0]))

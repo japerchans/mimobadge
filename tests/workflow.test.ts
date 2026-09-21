@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { seedWorkspace } from "../db/seed";
 import {
   executeAction,
+  familyReportText,
   handoffText,
   expireTranscripts,
 } from "../domain/workflow";
@@ -63,6 +64,11 @@ test("vertical slice requires review, consolidates memory, and discards transcri
   assert.match(interests[0].content, /バラ/);
   assert.ok(interests[0].history.length);
   assert.ok(state.audit.some((a) => a.action.includes("Approved")));
+  const familyReport = state.handoffs.find(
+    (item) => item.kind === "family" && item.recordingId === r.id,
+  );
+  assert.ok(familyReport);
+  assert.match(familyReport.content, /本日のご様子/);
 });
 test("rejected facts never enter resident memory or generated documentation", async () => {
   const { state, recording: r } = await prepared();
@@ -160,6 +166,34 @@ test("caregivers can add residents while keeping rooms unique", async () => {
       session,
     ),
     /room/,
+  );
+});
+test("family reports use approved resident knowledge and remain editable", async () => {
+  const state = seedWorkspace();
+  const text = familyReportText(state, "tanaka");
+  assert.match(text, /田中 花子/);
+  assert.doesNotMatch(text, /佐藤/);
+  assert.equal(text.match(/朝食は全量摂取/g)?.length, 1);
+  const created = await executeAction(
+    state,
+    { type: "create-family-report", residentId: "tanaka" },
+    session,
+  );
+  const report = state.handoffs.find((item) => item.id === created.id)!;
+  assert.equal(report.kind, "family");
+  assert.equal(report.residentId, "tanaka");
+  await executeAction(
+    state,
+    {
+      type: "save-family-report",
+      id: report.id,
+      content: "ご家族様へ\n職員が確認した文面です。",
+    },
+    session,
+  );
+  assert.match(report.content, /確認した文面/);
+  assert.ok(
+    state.audit.some((item) => item.action === "Updated family report"),
   );
 });
 test("unknown and unassigned residents cannot process; reassignment invalidates draft", async () => {

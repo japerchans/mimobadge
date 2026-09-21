@@ -83,6 +83,10 @@ export type Handoff = {
   createdAt: string;
   createdBy: string;
   content: string;
+  kind?: "handoff" | "family";
+  residentId?: string;
+  recordingId?: string;
+  updatedAt?: string;
 };
 export type MemoryNodeType = "person" | "place" | "event" | "time";
 export type MemoryNode = {

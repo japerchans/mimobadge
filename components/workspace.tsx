@@ -3,11 +3,11 @@ import { ja } from "@/lib/ja";
 import type { Information, WorkspaceResponse } from "@/types";
 import {
   ArrowRightLeft,
+  AudioLines,
   Cable,
   Check,
   FileText,
-  FolderOpen,
-  LayoutDashboard,
+  Heart,
   PanelLeft,
   PanelLeftClose,
   Plus,
@@ -18,8 +18,10 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { BrandLogo } from "./brand-logo";
 import { Dashboard } from "./dashboard";
 import {
+  FamilyReports,
   Handoffs,
   Recordings,
   Records,
@@ -28,14 +30,16 @@ import {
   Staff,
 } from "./facility-views";
 import { InformationDetail } from "./information-detail";
+import { RecordingImportDialog } from "./recording-import-dialog";
 import { RecordingWorkspace } from "./recording-workspace";
 import { ResidentWorkspace } from "./resident-workspace";
-import { Avatar, CaregiverAvatar, Empty, Modal } from "./shared";
+import { CaregiverAvatar, Empty, Modal } from "./shared";
 export const nav = [
-  { href: "/", label: "確認待ち", icon: LayoutDashboard },
-  { href: "/residents", label: "入居者", icon: UsersRound },
+  { href: "/", label: "会話を取り込む", icon: AudioLines },
+  { href: "/residents", label: "入居者・メモリー", icon: UsersRound },
   { href: "/records", label: "介護記録", icon: FileText },
   { href: "/handoffs", label: "申し送り", icon: ArrowRightLeft },
+  { href: "/family", label: "家族レポート", icon: Heart },
 ];
 export function WorkspaceApp() {
   const [data, setData] = useState<WorkspaceResponse | null>(null);
@@ -45,8 +49,7 @@ export function WorkspaceApp() {
   const [transfer, setTransfer] = useState(false);
   const [importing, setImporting] = useState(false);
   const [addingResident, setAddingResident] = useState(false);
-  const [selected, setSelected] = useState("tanaka");
-  const [importFile, setImportFile] = useState<File | null>(null);
+  const [selected, setSelected] = useState("");
   const [newResident, setNewResident] = useState({
     name: "",
     kana: "",
@@ -105,7 +108,7 @@ export function WorkspaceApp() {
   if (!data)
     return (
       <main className="boot">
-        <img src="/logo.png" width="220" height="62" alt="ここログ" />
+        <BrandLogo />
         {error ? (
           <>
             <p role="alert">{ja(error)}</p>
@@ -135,11 +138,12 @@ export function WorkspaceApp() {
     (recording
       ? "録音の確認"
       : {
-          "/": "確認待ち",
-          "/dashboard": "確認待ち",
+          "/": "会話を取り込む",
+          "/dashboard": "会話を取り込む",
           "/processing": "録音履歴",
           "/records": "介護記録",
           "/handoffs": "申し送り",
+          "/family": "家族レポート",
           "/residents": "入居者",
           "/staff": "職員",
           "/settings": "設定",
@@ -165,7 +169,7 @@ export function WorkspaceApp() {
       >
         <div className="sidebar-brand-row">
           <Link className="brand" href="/">
-            <img src="/logo.png" width="156" height="44" alt="ここログ" />
+            <BrandLogo compact />
           </Link>
           <button
             className="icon-button sidebar-close"
@@ -198,38 +202,6 @@ export function WorkspaceApp() {
             </Link>
           ))}
         </nav>
-        <div className="sidebar-section">
-          <div className="section-label">
-            <span>入居者を開く</span>
-          </div>
-          <div className="people-list">
-            {data.residents.map((r) => {
-              const waiting = data.recordings.filter(
-                (x) => x.residentId === r.id && x.status !== "completed",
-              ).length;
-              return (
-                <Link
-                  key={r.id}
-                  href={`/residents/${r.id}`}
-                  className={
-                    resident?.id === r.id || recording?.residentId === r.id
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  <Avatar resident={r} />
-                  <span>
-                    {r.name}
-                    <small>
-                      {waiting ? `未確認の録音 ${waiting}件` : `${r.room}号室`}
-                    </small>
-                  </span>
-                  {waiting > 0 && <span className="unread" />}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
         <div className="sidebar-bottom">
           <Link href="/processing">録音履歴</Link>
           <Link href="/staff">担当職員</Link>
@@ -278,23 +250,21 @@ export function WorkspaceApp() {
               action={action}
             />
           ) : pathname === "/" || pathname === "/dashboard" ? (
-            <Dashboard data={data} />
+            <Dashboard data={data} onImport={() => setImporting(true)} />
           ) : pathname === "/processing" ? (
-            <Recordings
-              data={data}
-              onTransfer={() => setTransfer(true)}
-              onImport={() => setImporting(true)}
-            />
+            <Recordings data={data} onImport={() => setImporting(true)} />
           ) : pathname === "/residents" ? (
             <Residents data={data} onAdd={() => setAddingResident(true)} />
           ) : pathname === "/records" ? (
             <Records data={data} />
           ) : pathname === "/handoffs" ? (
             <Handoffs data={data} action={action} />
+          ) : pathname === "/family" ? (
+            <FamilyReports data={data} action={action} />
           ) : pathname === "/staff" ? (
             <Staff data={data} />
           ) : pathname === "/settings" ? (
-            <SettingsPage data={data} />
+            <SettingsPage data={data} onDemo={() => setTransfer(true)} />
           ) : (
             <Empty>
               記録が見つかりません。 <Link href="/">確認待ちに戻る</Link>
@@ -302,7 +272,7 @@ export function WorkspaceApp() {
           )}
         </main>
         <footer className="app-footer">
-          <span>ここログ</span>
+          <span>こころん</span>
           <span>デモデータを使用しています</span>
         </footer>
       </div>
@@ -378,87 +348,15 @@ export function WorkspaceApp() {
         </Modal>
       )}
       {importing && (
-        <Modal
-          title="SDカードから取り込む"
-          close={() => !busy && setImporting(false)}
-        >
-          <div className="dialog-body">
-            <div className="transfer-icon">
-              <FolderOpen size={30} />
-            </div>
-            <p>
-              SDカード、USB、または端末内の音声ファイルを選ぶと、ここログ内で文字起こしして確認待ちに追加します。
-            </p>
-            <label>
-              会話した入居者
-              <select
-                value={selected}
-                onChange={(e) => setSelected(e.target.value)}
-              >
-                {data.residents.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} · 居室 {r.room}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              音声ファイル
-              <input
-                type="file"
-                accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg,.aac,.flac"
-                onChange={(event) =>
-                  setImportFile(event.target.files?.[0] || null)
-                }
-              />
-            </label>
-            <p className="muted small">
-              取り込めるサイズは24MBまでです。文字起こし後の会話全文は、記録確定後または7日後に削除されます。
-            </p>
-            {error && (
-              <p role="alert" className="error">
-                {ja(error)}
-              </p>
-            )}
-          </div>
-          <div className="dialog-actions">
-            <button onClick={() => setImporting(false)} disabled={busy}>
-              キャンセル
-            </button>
-            <button
-              className="primary"
-              disabled={busy || !importFile || !selected}
-              onClick={async () => {
-                if (!importFile) return;
-                setBusy(true);
-                setError("");
-                try {
-                  const form = new FormData();
-                  form.set("residentId", selected);
-                  form.set("file", importFile);
-                  const response = await fetch("/api/import-recording", {
-                    method: "POST",
-                    body: form,
-                  });
-                  const result = await response.json();
-                  if (!response.ok) throw new Error(ja(result.error));
-                  await refresh();
-                  setToast("音声を文字起こしして確認待ちに追加しました");
-                  setImportFile(null);
-                  setImporting(false);
-                  router.push(`/processing/${result.id}`);
-                } catch (e) {
-                  setError((e as Error).message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <FolderOpen size={16} />
-              {busy ? "取り込み中…" : "取り込んで文字起こし"}
-            </button>
-          </div>
-        </Modal>
+        <RecordingImportDialog
+          residents={data.residents}
+          close={() => setImporting(false)}
+          refresh={refresh}
+          openRecording={(id) => {
+            setImporting(false);
+            router.push(`/processing/${id}`);
+          }}
+        />
       )}
       {addingResident && (
         <Modal

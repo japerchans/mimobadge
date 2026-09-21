@@ -35,7 +35,12 @@ const labels: Record<string, string> = {
   Settings: "設定",
   "Recording review": "録音の確認",
   "Not found": "見つかりません",
-  MimoBadge: "ここログ",
+  MimoBadge: "こころん",
+  "No approved information for this resident.":
+    "家族レポートに使える確認済み情報がまだありません。",
+  "Family report not found.": "家族レポートが見つかりません。",
+  "Created family report": "家族レポートを作成しました",
+  "Updated family report": "家族レポートを更新しました",
   "Sakura Care Home": "さくらケアホーム",
   "Facility workspace": "介護記録",
   "Find a resident or staff member": "入居者・職員を検索",

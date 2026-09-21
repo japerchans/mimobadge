@@ -165,7 +165,13 @@ export function RecordingRow({
       <div className="recording-person">
         <strong>{person?.name || "入居者未選択"}</strong>
         <small>
-          {time(r.createdAt)} <span>·</span> {duration(r.duration)}{" "}
+          {time(r.createdAt)}
+          {r.duration > 0 && (
+            <>
+              {" "}
+              <span>·</span> {duration(r.duration)}
+            </>
+          )}{" "}
           <span>·</span>{" "}
           {data.caregivers.find((c) => c.id === r.caregiverId)?.name}
           {r.source === "sd-card" && (

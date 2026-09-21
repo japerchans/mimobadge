@@ -51,6 +51,15 @@ export const actionSchema = z.discriminatedUnion("type", [
     updatedAt: z.string(),
   }),
   z.object({ type: z.literal("handoff") }),
+  z.object({
+    type: z.literal("create-family-report"),
+    residentId: z.string(),
+  }),
+  z.object({
+    type: z.literal("save-family-report"),
+    id: z.string(),
+    content: z.string().trim().min(1).max(5000),
+  }),
 ]);
 export class DomainError extends Error {
   constructor(
@@ -88,6 +97,46 @@ export function handoffText(state: Workspace) {
         .join("\n")}`;
     })
     .join("\n\n");
+}
+
+export function familyReportText(state: Workspace, residentId: string) {
+  const resident = state.residents.find((item) => item.id === residentId);
+  if (!resident) throw new DomainError("Resident not found.", 404);
+  const information = state.information
+    .filter((item) => item.residentId === residentId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const uniqueByContent = (items: typeof information, limit: number) =>
+    items
+      .filter(
+        (item, index, all) =>
+          all.findIndex((candidate) => candidate.content === item.content) ===
+          index,
+      )
+      .slice(0, limit);
+  const recentCare = uniqueByContent(
+    information.filter((item) => item.kind === "care"),
+    3,
+  );
+  const profile = uniqueByContent(
+    information.filter((item) => item.kind === "profile"),
+    2,
+  );
+  if (!recentCare.length && !profile.length)
+    throw new DomainError("No approved information for this resident.");
+  const paragraphs = [
+    "ご家族様へ",
+    `${resident.name}さんの最近のご様子をお知らせします。`,
+  ];
+  if (recentCare.length)
+    paragraphs.push(recentCare.map((item) => `・${item.content}`).join("\n"));
+  if (profile.length)
+    paragraphs.push(
+      `会話の中では、${profile.map((item) => item.content.replace(/[。.]$/, "")).join("、")}といったお話もありました。`,
+    );
+  paragraphs.push(
+    "この文面は確認済みの記録から作成した下書きです。送信前に職員が内容を確認してください。",
+  );
+  return paragraphs.join("\n\n");
 }
 export async function executeAction(
   state: Workspace,
@@ -241,6 +290,10 @@ export async function executeAction(
     r.draft = input.draft.trim();
     if (input.approve) {
       if (!r.residentId) throw new DomainError("Select a resident first.");
+      const reviewedResident = state.residents.find(
+        (item) => item.id === r.residentId,
+      );
+      if (!reviewedResident) throw new DomainError("Resident not found.", 404);
       const accepted = r.proposals.filter(
         (p) => p.kind !== "ignored" && p.status !== "rejected",
       );
@@ -300,6 +353,32 @@ export async function executeAction(
           createdAt: now,
           approvedBy: session.userId,
         });
+      if (accepted.length) {
+        const reportContent = [
+          "ご家族様へ",
+          `${reviewedResident.name}さんの本日のご様子をお知らせします。`,
+          r.draft,
+          accepted.some((item) => item.kind === "profile")
+            ? `会話の中では、${accepted
+                .filter((item) => item.kind === "profile")
+                .map((item) => item.content.replace(/[。.]$/, ""))
+                .join("、")}といったお話もありました。`
+            : "",
+          "送信前に職員が内容を確認してください。",
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+        state.handoffs.unshift({
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+          createdBy: session.userId,
+          content: reportContent,
+          kind: "family",
+          residentId: reviewedResident.id,
+          recordingId: r.id,
+        });
+      }
       rebuildMemoryGraph(state);
       r.status = "completed";
       // Only the approved evidence excerpts persist; raw conversations are discarded on finalization.
@@ -349,11 +428,36 @@ export async function executeAction(
     );
     return { id: input.id };
   }
+  if (input.type === "create-family-report") {
+    const report = {
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      createdBy: session.userId,
+      content: familyReportText(state, input.residentId),
+      kind: "family" as const,
+      residentId: input.residentId,
+    };
+    state.handoffs.unshift(report);
+    audit("Created family report", report.id);
+    return { id: report.id };
+  }
+  if (input.type === "save-family-report") {
+    const report = state.handoffs.find(
+      (item) => item.id === input.id && item.kind === "family",
+    );
+    if (!report) throw new DomainError("Family report not found.", 404);
+    report.content = input.content;
+    report.updatedAt = now;
+    audit("Updated family report", report.id);
+    return { id: report.id };
+  }
   const handoff = {
     id: crypto.randomUUID(),
     createdAt: now,
     createdBy: session.userId,
     content: handoffText(state),
+    kind: "handoff" as const,
   };
   state.handoffs.unshift(handoff);
   audit("Generated handoff from approved information", handoff.id);

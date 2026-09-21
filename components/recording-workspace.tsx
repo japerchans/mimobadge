@@ -111,7 +111,7 @@ export function RecordingWorkspace({
         title={
           resident ? `${resident.name} · 会話の記録` : "会話した入居者を選択"
         }
-        description={`${formatDate(r.createdAt)} ${time(r.createdAt)} · ${duration(r.duration)} · ${data.caregivers.find((c) => c.id === r.caregiverId)?.name}`}
+        description={`${formatDate(r.createdAt)} ${time(r.createdAt)}${r.duration ? ` · ${duration(r.duration)}` : ""} · ${r.source === "sd-card" ? r.sourceName || "SDカード音声" : "デモ録音"} · ${data.caregivers.find((c) => c.id === r.caregiverId)?.name}`}
       >
         <Status value={r.status} />
       </PageHeading>
@@ -129,17 +129,22 @@ export function RecordingWorkspace({
             <div>
               <h2>記録を確定しました</h2>
               <p>
-                確定した情報を職員間で共有できます。会話の全文は削除しました。
+                介護記録、メモリーブレイン、家族レポートの下書きに反映しました。会話の全文は削除しました。
               </p>
             </div>
             {resident && (
-              <Link
-                className="button primary"
-                href={`/residents/${resident.id}`}
-              >
-                入居者の記録を開く
-                <ArrowUpRight size={16} />
-              </Link>
+              <div className="row success-links">
+                <Link className="button" href="/family">
+                  家族レポート
+                </Link>
+                <Link
+                  className="button primary"
+                  href={`/residents/${resident.id}`}
+                >
+                  メモリーブレインを開く
+                  <ArrowUpRight size={16} />
+                </Link>
+              </div>
             )}
           </div>
           <section className="panel">
@@ -267,7 +272,9 @@ export function RecordingWorkspace({
                     : "下書きを作成"}
               </button>
               <small>
-                デモ用の会話を使います。実際の音声解析は行いません。
+                {r.source === "sd-card"
+                  ? "アップロードした音声を文字起こしします。"
+                  : "デモ用の会話を使います。実際の音声解析は行いません。"}
               </small>
             </section>
           ) : (
@@ -276,13 +283,20 @@ export function RecordingWorkspace({
                 <section className="panel transcript-panel">
                   <div className="panel-header">
                     <h2>元の会話</h2>
-                    <span className="demo-chip">デモ</span>
+                    <span className="demo-chip">
+                      {r.source === "sd-card" ? "SDカード" : "デモ"}
+                    </span>
                   </div>
                   <div className="audio-summary">
                     <AudioLines size={24} />
                     <div>
                       <strong>録音の内容</strong>
-                      <small>{duration(r.duration)}· デモ録音</small>
+                      <small>
+                        {r.duration ? `${duration(r.duration)} · ` : ""}
+                        {r.source === "sd-card"
+                          ? `${r.sourceName || "音声ファイル"} · 文字起こし済み`
+                          : "デモ録音"}
+                      </small>
                     </div>
                   </div>
                   <div className="transcript">
@@ -495,7 +509,7 @@ export function RecordingWorkspace({
                     }
                   >
                     <Check size={17} />
-                    内容を確認して確定
+                    確認して共有知識に反映
                   </button>
                 </div>
               </div>
@@ -510,14 +524,14 @@ export function RecordingWorkspace({
         >
           <div className="dialog-body">
             <p>
-              次の入居者の記録とプロフィールに反映します：{" "}
+              次の入居者の介護記録、メモリーブレイン、家族レポートの下書きに反映します：{" "}
               <strong>{resident?.name}</strong>さん
             </p>
             <div className="confirmation-record" lang="ja">
               {draft || "今日の介護記録は選択されていません。"}
             </div>
             <p className="muted small">
-              除外した内容は保存しません。会話の全文は削除されます。
+              除外した内容は保存しません。会話の全文は削除されます。家族への自動送信は行いません。
             </p>
           </div>
           <div className="dialog-actions">
@@ -529,7 +543,7 @@ export function RecordingWorkspace({
               disabled={saving}
               onClick={() => save(true)}
             >
-              {saving ? "確定中…" : "確定して入居者情報に反映"}
+              {saving ? "確定中…" : "確定して共有知識に反映"}
             </button>
           </div>
         </Modal>

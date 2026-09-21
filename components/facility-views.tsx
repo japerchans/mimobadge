@@ -8,9 +8,12 @@ import {
   Download,
   FileText,
   FolderOpen,
+  Heart,
   LogOut,
   Plus,
+  Save,
   Search,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -27,11 +30,9 @@ import {
 } from "./shared";
 export function Recordings({
   data,
-  onTransfer,
   onImport,
 }: {
   data: WorkspaceResponse;
-  onTransfer: () => void;
   onImport: () => void;
 }) {
   const [filter, setFilter] = useState("all");
@@ -48,15 +49,11 @@ export function Recordings({
     <>
       <PageHeading
         title="録音一覧"
-        description="録音を選んで内容を確認し、介護記録を確定します。"
+        description="取り込んだ会話を確認し、施設の共有知識へ反映します。"
       >
         <button className="primary" onClick={onImport}>
           <FolderOpen size={16} />
-          SDカードから取り込む
-        </button>
-        <button className="primary" onClick={onTransfer}>
-          <Plus size={16} />
-          デモ録音を追加
+          録音ファイルを取り込む
         </button>
       </PageHeading>
       <div className="tabs">
@@ -233,6 +230,7 @@ export function Handoffs({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [view, setView] = useState("current");
+  const handoffs = data.handoffs.filter((item) => item.kind !== "family");
   const download = (text: string) => {
     const url = URL.createObjectURL(
       new Blob([text], { type: "text/plain;charset=utf-8" }),
@@ -285,7 +283,7 @@ export function Handoffs({
           className={view === "saved" ? "active" : ""}
           onClick={() => setView("saved")}
         >
-          保存済み<span>{data.handoffs.length}</span>
+          保存済み<span>{handoffs.length}</span>
         </button>
       </div>
       {view === "current" ? (
@@ -326,9 +324,9 @@ export function Handoffs({
             </section>
           ))}
         </div>
-      ) : data.handoffs.length ? (
+      ) : handoffs.length ? (
         <div className="records-list">
-          {data.handoffs.map((h) => (
+          {handoffs.map((h) => (
             <section className="panel" key={h.id}>
               <div className="panel-header">
                 <h2>
@@ -348,6 +346,193 @@ export function Handoffs({
       ) : (
         <Empty>
           保存済みの申し送りはありません。「申し送りを作成・保存」から作成できます。
+        </Empty>
+      )}
+    </>
+  );
+}
+
+export function FamilyReports({
+  data,
+  action,
+}: {
+  data: WorkspaceResponse;
+  action: Action;
+}) {
+  const reports = data.handoffs
+    .filter((item) => item.kind === "family")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [residentId, setResidentId] = useState("");
+  const [editingId, setEditingId] = useState("");
+  const [content, setContent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const share = async (text: string, residentName: string) => {
+    setNotice("");
+    if (navigator.share) {
+      await navigator.share({
+        title: `${residentName}さんの近況`,
+        text,
+      });
+      setNotice("共有先を開きました。");
+    } else {
+      await navigator.clipboard.writeText(text);
+      setNotice("家族向け文面をコピーしました。");
+    }
+  };
+  return (
+    <>
+      <PageHeading
+        title="家族レポート"
+        description="確認済みの会話から近況の下書きを作り、職員が確認して家族へ共有します。"
+      >
+        <select
+          aria-label="レポートを作る入居者"
+          value={residentId}
+          onChange={(event) => setResidentId(event.target.value)}
+        >
+          <option value="">入居者を選択</option>
+          {data.residents.map((resident) => (
+            <option key={resident.id} value={resident.id}>
+              {resident.name} · {resident.room}号室
+            </option>
+          ))}
+        </select>
+        <button
+          className="primary"
+          disabled={!residentId || busy}
+          onClick={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              await action(
+                { type: "create-family-report", residentId },
+                "家族レポートの下書きを作成しました",
+              );
+              setResidentId("");
+            } catch (caught) {
+              setError((caught as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <Heart size={16} />
+          {busy ? "作成中…" : "下書きを作る"}
+        </button>
+      </PageHeading>
+      {error && (
+        <p className="error" role="alert">
+          {ja(error)}
+        </p>
+      )}
+      {notice && (
+        <p className="import-notice" role="status">
+          {notice}
+        </p>
+      )}
+      {reports.length ? (
+        <div className="family-report-list">
+          {reports.map((report) => {
+            const resident = data.residents.find(
+              (candidate) => candidate.id === report.residentId,
+            );
+            const editing = editingId === report.id;
+            return (
+              <section className="panel family-report" key={report.id}>
+                <div className="panel-header">
+                  <div>
+                    <h2>{resident?.name || "入居者"}さんの近況</h2>
+                    <span className="muted small">
+                      {formatDate(report.createdAt)} {time(report.createdAt)} ·
+                      下書き
+                    </span>
+                  </div>
+                  <span className="status pending">
+                    <span />
+                    送信前の確認
+                  </span>
+                </div>
+                <div className="family-report-body">
+                  {editing ? (
+                    <textarea
+                      aria-label="家族レポートの本文"
+                      rows={9}
+                      value={content}
+                      onChange={(event) => setContent(event.target.value)}
+                    />
+                  ) : (
+                    <p lang="ja">{report.content}</p>
+                  )}
+                </div>
+                <div className="family-report-actions">
+                  {editing ? (
+                    <>
+                      <button onClick={() => setEditingId("")}>
+                        キャンセル
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={busy || !content.trim()}
+                        onClick={async () => {
+                          setBusy(true);
+                          setError("");
+                          try {
+                            await action(
+                              {
+                                type: "save-family-report",
+                                id: report.id,
+                                content,
+                              },
+                              "家族レポートを保存しました",
+                            );
+                            setEditingId("");
+                          } catch (caught) {
+                            setError((caught as Error).message);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        <Save size={15} />
+                        保存
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingId(report.id);
+                          setContent(report.content);
+                        }}
+                      >
+                        内容を編集
+                      </button>
+                      <button
+                        className="primary"
+                        onClick={() =>
+                          share(
+                            report.content,
+                            resident?.name || "入居者",
+                          ).catch(() =>
+                            setError("共有を開始できませんでした。"),
+                          )
+                        }
+                      >
+                        <Share2 size={15} />
+                        家族へ共有
+                      </button>
+                    </>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <Empty>
+          家族レポートはまだありません。確認済みの会話から下書きを作れます。
         </Empty>
       )}
     </>
@@ -387,7 +572,13 @@ export function Staff({ data }: { data: WorkspaceResponse }) {
     </>
   );
 }
-export function SettingsPage({ data }: { data: WorkspaceResponse }) {
+export function SettingsPage({
+  data,
+  onDemo,
+}: {
+  data: WorkspaceResponse;
+  onDemo: () => void;
+}) {
   return (
     <>
       <PageHeading
@@ -420,8 +611,14 @@ export function SettingsPage({ data }: { data: WorkspaceResponse }) {
           <div className="panel-note">
             <CircleHelp size={16} />
             <span>
-              すべて架空のデータです。実運用には個人別ログイン、定期削除、音声解析サービスの接続が必要です。
+              すべて架空のデータです。実運用には利用同意、職員別ログイン、保存期間に沿った削除運用が必要です。
             </span>
+          </div>
+          <div className="settings-demo-action">
+            <button onClick={onDemo}>
+              <Plus size={16} />
+              デモ録音を追加
+            </button>
           </div>
         </section>
         <section className="panel">

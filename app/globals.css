@@ -1656,6 +1656,193 @@ dialog::backdrop {
     width: max-content;
   }
 }
+
+/* Kokoron identity and SD-card intake */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  color: #356bc4;
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.12em;
+  white-space: nowrap;
+}
+.brand-logo.compact {
+  font-size: 31px;
+}
+.brand-heart {
+  display: inline-grid;
+  place-items: center;
+  width: 0.9em;
+  height: 0.9em;
+  margin: 0 0.08em 0 0.1em;
+}
+.brand-heart svg {
+  width: 100%;
+  height: 100%;
+}
+.boot .brand-logo,
+.login .brand-logo {
+  align-self: center;
+}
+.sidebar .brand-logo {
+  padding: 7px 4px;
+}
+.import-dialog-body {
+  gap: 18px;
+}
+.audio-dropzone {
+  width: 100%;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  border: 2px dashed #aebfda;
+  border-radius: 20px;
+  background: #e9f0fb;
+  color: #315b99;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.42);
+}
+.audio-dropzone:hover,
+.audio-dropzone.dragging {
+  border-color: #4f89ed;
+  background: #dfeaff;
+  transform: translateY(-1px);
+}
+.audio-dropzone strong {
+  font-size: 16px;
+}
+.audio-dropzone span,
+.audio-dropzone small {
+  color: #587399;
+  font-size: 13px;
+}
+.audio-dropzone small {
+  margin-top: 5px;
+  font-size: 11px;
+}
+.import-queue {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.import-file {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  background: #f7f9fb;
+  border-bottom: 1px solid #dfe6ed;
+}
+.import-file:last-child {
+  border-bottom: 0;
+}
+.import-file > svg {
+  color: #5778a8;
+  flex: 0 0 auto;
+}
+.import-file-main {
+  min-width: 0;
+  flex: 1;
+}
+.import-file-main strong,
+.import-file-main small {
+  display: block;
+}
+.import-file-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-file-main small {
+  color: #647587;
+  font-size: 11px;
+}
+.import-file select {
+  width: 180px;
+  flex: 0 0 auto;
+}
+.import-file.error {
+  background: #fff4f2;
+}
+.import-file.done {
+  background: #f1f8f4;
+}
+.import-file.uploading > svg {
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.import-open {
+  color: #285e59;
+  background: #e2eee9;
+  border-color: #c9dfd6;
+}
+.import-notice {
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #e3f0e9;
+  color: #315f4d;
+  font-weight: 650;
+}
+.family-report-list {
+  display: grid;
+  gap: 20px;
+}
+.family-report-body {
+  padding: 24px;
+}
+.family-report-body p {
+  white-space: pre-wrap;
+  line-height: 2;
+}
+.family-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #dbe2e8;
+}
+.settings-demo-action {
+  padding: 18px 20px;
+  border-top: 1px solid #dbe2e8;
+}
+.success-links {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (max-width: 680px) {
+  .brand-logo {
+    font-size: 39px;
+  }
+  .brand-logo.compact {
+    font-size: 29px;
+  }
+  .audio-dropzone {
+    min-height: 165px;
+    padding: 20px 12px;
+  }
+  .import-file {
+    flex-wrap: wrap;
+  }
+  .import-file-main {
+    min-width: calc(100% - 40px);
+  }
+  .import-file select {
+    width: calc(100% - 82px);
+    margin-left: 31px;
+  }
+  .family-report-actions,
+  .success-links {
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

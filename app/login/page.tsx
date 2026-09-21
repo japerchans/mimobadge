@@ -1,6 +1,7 @@
 "use client";
 import { ja } from "@/lib/ja";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand-logo";
 export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,8 +28,8 @@ export default function Login() {
           }
         }}
       >
-        <img src="/logo.png" width="220" height="62" alt="ここログ" />
-        <p>施設のデモ環境にログインします。</p>
+        <BrandLogo />
+        <p>会話を施設の共有知識につなぐ「こころん」へログインします。</p>
         <label>
           施設のアクセスコード
           <input

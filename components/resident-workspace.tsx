@@ -106,7 +106,7 @@ export function ResidentWorkspace({
       </div>
       <div className="tabs" role="tablist" aria-label="表示する情報">
         {[
-          ["chat", "AIメモ"],
+          ["chat", "この方について"],
           ["today", "今日の記録"],
           ["history", "これまでの記録"],
           ["profile", "プロフィール"],
@@ -152,11 +152,11 @@ export function ResidentWorkspace({
               </Link>
             ))}
           {tab === "chat" ? (
-            <section className="ai-memory-chat" aria-label="AIメモ">
+            <section className="ai-memory-chat" aria-label="この方について">
               <div
                 className="chat-messages"
                 role="log"
-                aria-label="ここログAIとの会話"
+                aria-label="こころんAIとの会話"
                 aria-live="polite"
               >
                 <div className="ai-message">
@@ -164,7 +164,7 @@ export function ResidentWorkspace({
                     <KokologMark />
                   </span>
                   <div>
-                    <strong>ここログAI</strong>
+                    <strong>こころんAI</strong>
                     <p>{greeting}</p>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export function ResidentWorkspace({
                         <KokologMark />
                       </span>
                       <div>
-                        <strong>ここログAI</strong>
+                        <strong>こころんAI</strong>
                         <p>{message.answer}</p>
                       </div>
                     </div>
@@ -196,7 +196,7 @@ export function ResidentWorkspace({
                         <KokologMark />
                       </span>
                       <div>
-                        <strong>ここログAI</strong>
+                        <strong>こころんAI</strong>
                         {busy ? (
                           <p role="status">記録を確認しています…</p>
                         ) : (

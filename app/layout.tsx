@@ -9,8 +9,9 @@ const notoSansJp = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "ここログ · 介護記録",
-  description: "職員が確認して残す介護記録と入居者の情報。",
+  title: "こころん · 会話を施設の共有知識へ",
+  description:
+    "介護中の会話を、介護記録・メモリーブレイン・家族レポートへつなぐ共有知識基盤。",
   icons: { icon: "/icon.png" },
 };
 export default function RootLayout({
