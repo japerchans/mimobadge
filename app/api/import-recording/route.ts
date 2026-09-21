@@ -8,6 +8,7 @@ import type { Proposal, Segment } from "@/types";
 export const maxDuration = 60;
 
 const maxBytes = 24 * 1024 * 1024;
+const maxTranscriptCharacters = 120_000;
 
 export async function POST(request: Request) {
   if (!sameOrigin(request))
@@ -32,22 +33,36 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const file = form.get("file");
+    const mode = String(form.get("mode") || "import");
     const requestedResidentId = String(form.get("residentId") || "auto");
-    if (!(file instanceof File))
+    if (mode === "transcribe-chunk") {
+      const validation = validateAudioFile(file);
+      if (validation) return validation;
+      const prompt = String(form.get("prompt") || "").slice(-500);
+      const transcript = await transcribe(file as File, key, prompt);
+      return Response.json({ transcript });
+    }
+
+    if (mode !== "import" && mode !== "assemble-chunks")
+      return Response.json({ error: "無効な処理です。" }, { status: 400 });
+    const suppliedTranscript =
+      mode === "assemble-chunks"
+        ? String(form.get("transcript") || "").trim()
+        : "";
+    if (suppliedTranscript.length > maxTranscriptCharacters)
       return Response.json(
-        { error: "音声ファイルを選択してください。" },
-        { status: 400 },
-      );
-    if (file.size < 1 || file.size > maxBytes)
-      return Response.json(
-        { error: "音声ファイルは24MB以内で選択してください。" },
+        { error: "録音が長すぎます。200MB以内のWAVを選択してください。" },
         { status: 413 },
       );
-    if (!isSupportedRecordingFile(file))
+    if (mode === "assemble-chunks" && !suppliedTranscript)
       return Response.json(
-        { error: "対応している音声ファイルを選択してください。" },
+        { error: "文字起こしできる会話が見つかりませんでした。" },
         { status: 400 },
       );
+    if (mode === "import") {
+      const validation = validateAudioFile(file);
+      if (validation) return validation;
+    }
     const residents = await transaction(session.facilityId, (state) =>
       structuredClone(state.residents),
     );
@@ -60,7 +75,8 @@ export async function POST(request: Request) {
         { error: "入居者を選択してください。" },
         { status: 400 },
       );
-    const transcriptText = await transcribe(file, key);
+    const transcriptText =
+      suppliedTranscript || (await transcribe(file as File, key));
     if (!transcriptText.trim())
       return Response.json(
         { error: "文字起こしできる会話が見つかりませんでした。" },
@@ -102,7 +118,9 @@ export async function POST(request: Request) {
         draft: extracted.draft,
         context: extracted.context,
         source: "sd-card",
-        sourceName: file.name || "SDカード音声",
+        sourceName:
+          String(form.get("sourceName") || "") ||
+          (file instanceof File ? file.name : "SDカード音声"),
         residentMatch: manuallySelected ? "manual" : "automatic",
         retentionUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
         revision: 1,
@@ -135,11 +153,31 @@ export async function POST(request: Request) {
   }
 }
 
-async function transcribe(file: File, key: string) {
+function validateAudioFile(file: FormDataEntryValue | null) {
+  if (!(file instanceof File))
+    return Response.json(
+      { error: "音声ファイルを選択してください。" },
+      { status: 400 },
+    );
+  if (file.size < 1 || file.size > maxBytes)
+    return Response.json(
+      { error: "音声ファイルは24MB以内で選択してください。" },
+      { status: 413 },
+    );
+  if (!isSupportedRecordingFile(file))
+    return Response.json(
+      { error: "対応している音声ファイルを選択してください。" },
+      { status: 400 },
+    );
+  return null;
+}
+
+async function transcribe(file: File, key: string, prompt = "") {
   const form = new FormData();
   form.set("file", file, file.name || "recording.webm");
   form.set("model", process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe");
   form.set("language", "ja");
+  if (prompt) form.set("prompt", prompt);
   const response = await fetch(
     "https://api.openai.com/v1/audio/transcriptions",
     {

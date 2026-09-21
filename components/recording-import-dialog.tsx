@@ -1,6 +1,11 @@
 "use client";
 
 import { ja } from "@/lib/ja";
+import {
+  directRecordingLimit,
+  largeWavLimit,
+  splitWavFile,
+} from "@/lib/wav-chunks";
 import type { Resident } from "@/types";
 import {
   Check,
@@ -23,10 +28,10 @@ type ImportItem = {
   recordingId?: string;
   residentName?: string;
   detectedAutomatically?: boolean;
+  progress?: string;
 };
 
 const acceptedExtensions = /\.(m4a|mp3|wav|webm|ogg|aac|flac|mp4)$/i;
-const maxBytes = 24 * 1024 * 1024;
 
 export function RecordingImportDialog({
   residents,
@@ -54,12 +59,15 @@ export function RecordingImportDialog({
       ...next.map((file) => {
         const validType =
           file.type.startsWith("audio/") || file.type === "video/mp4";
+        const isWav = /\.wav$/i.test(file.name);
         const error =
-          file.size > maxBytes
-            ? "24MBを超えています"
-            : !validType && !acceptedExtensions.test(file.name)
-              ? "対応していない形式です"
-              : undefined;
+          file.size > largeWavLimit
+            ? "200MBを超えています"
+            : file.size > directRecordingLimit && !isWav
+              ? "4MBを超える場合はWAVを選択してください"
+              : !validType && !acceptedExtensions.test(file.name)
+                ? "対応していない形式です"
+                : undefined;
         return {
           key: crypto.randomUUID(),
           file,
@@ -81,9 +89,46 @@ export function RecordingImportDialog({
       ),
     );
     try {
-      const form = new FormData();
+      let form = new FormData();
       form.set("residentId", item.residentId);
-      form.set("file", item.file);
+      if (item.file.size > directRecordingLimit) {
+        const chunks = await splitWavFile(item.file);
+        const transcripts: string[] = [];
+        for (let index = 0; index < chunks.length; index++) {
+          setItems((current) =>
+            current.map((candidate) =>
+              candidate.key === item.key
+                ? {
+                    ...candidate,
+                    progress: `分割した音声を文字起こし中 ${index + 1}/${chunks.length}`,
+                  }
+                : candidate,
+            ),
+          );
+          const chunkForm = new FormData();
+          chunkForm.set("mode", "transcribe-chunk");
+          chunkForm.set("file", chunks[index]);
+          if (transcripts.length)
+            chunkForm.set("prompt", transcripts.at(-1)!.slice(-500));
+          const chunkResponse = await fetch("/api/import-recording", {
+            method: "POST",
+            body: chunkForm,
+          });
+          const chunkResult = await chunkResponse.json();
+          if (!chunkResponse.ok) throw new Error(ja(chunkResult.error));
+          if (chunkResult.transcript?.trim())
+            transcripts.push(chunkResult.transcript.trim());
+        }
+        if (!transcripts.length)
+          throw new Error("文字起こしできる会話が見つかりませんでした。");
+        form = new FormData();
+        form.set("mode", "assemble-chunks");
+        form.set("residentId", item.residentId);
+        form.set("transcript", transcripts.join("\n"));
+        form.set("sourceName", item.file.name);
+      } else {
+        form.set("file", item.file);
+      }
       const response = await fetch("/api/import-recording", {
         method: "POST",
         body: form,
@@ -99,6 +144,7 @@ export function RecordingImportDialog({
                 recordingId: result.id,
                 residentName: result.residentName,
                 detectedAutomatically: result.detectedAutomatically,
+                progress: undefined,
               }
             : candidate,
         ),
@@ -115,6 +161,7 @@ export function RecordingImportDialog({
                   error instanceof Error
                     ? error.message
                     : "取り込めませんでした",
+                progress: undefined,
               }
             : candidate,
         ),
@@ -178,7 +225,7 @@ export function RecordingImportDialog({
           <Upload size={28} />
           <strong>ここに録音ファイルをドロップ</strong>
           <span>またはクリックしてファイルを選ぶ</span>
-          <small>M4A・MP3・WAVなど／1件24MBまで／最大10件</small>
+          <small>M4A・MP3などは4MBまで／WAVは200MBまで／最大10件</small>
         </button>
         <input
           ref={inputRef}
@@ -201,7 +248,7 @@ export function RecordingImportDialog({
                   <small>
                     {(item.file.size / 1024 / 1024).toFixed(1)}MB
                     {item.status === "uploading" &&
-                      " · 文字起こし・入居者判定・整理中…"}
+                      ` · ${item.progress || "文字起こし・入居者判定・整理中…"}`}
                     {item.status === "done" &&
                       ` · ${item.residentName}さん${item.detectedAutomatically ? "を自動判定" : "を選択"} · 確認待ち`}
                     {item.error && ` · ${item.error}`}
