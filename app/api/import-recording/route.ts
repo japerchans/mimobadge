@@ -1,6 +1,7 @@
 import { getSession, sameOrigin } from "@/lib/auth";
 import { transaction } from "@/db/repository";
 import { DemoMnemoNet, generateDraft } from "@/domain/mnemonet";
+import { detectResidentFromIntroduction } from "@/domain/resident-detection";
 import type { Proposal, Segment } from "@/types";
 
 export const maxDuration = 60;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const file = form.get("file");
-    const residentId = String(form.get("residentId") || "");
+    const requestedResidentId = String(form.get("residentId") || "auto");
     if (!(file instanceof File))
       return Response.json(
         { error: "音声ファイルを選択してください。" },
@@ -60,12 +61,14 @@ export async function POST(request: Request) {
         { error: "対応している音声ファイルを選択してください。" },
         { status: 400 },
       );
-    const resident = await transaction(session.facilityId, (state) =>
-      state.residents.find((r) => r.id === residentId)
-        ? state.residents.find((r) => r.id === residentId)!
-        : null,
+    const residents = await transaction(session.facilityId, (state) =>
+      structuredClone(state.residents),
     );
-    if (!resident)
+    const manuallySelected =
+      requestedResidentId !== "auto"
+        ? residents.find((resident) => resident.id === requestedResidentId)
+        : null;
+    if (requestedResidentId !== "auto" && !manuallySelected)
       return Response.json(
         { error: "入居者を選択してください。" },
         { status: 400 },
@@ -75,6 +78,17 @@ export async function POST(request: Request) {
       return Response.json(
         { error: "文字起こしできる会話が見つかりませんでした。" },
         { status: 400 },
+      );
+    const resident =
+      manuallySelected ||
+      detectResidentFromIntroduction(transcriptText, residents);
+    if (!resident)
+      return Response.json(
+        {
+          error:
+            "録音冒頭から入居者を特定できませんでした。入居者を選択して、もう一度取り込んでください。",
+        },
+        { status: 422 },
       );
     const segments = transcriptToSegments(transcriptText);
     const extracted = await extractProposals({
@@ -102,6 +116,7 @@ export async function POST(request: Request) {
         context: extracted.context,
         source: "sd-card",
         sourceName: file.name || "SDカード音声",
+        residentMatch: manuallySelected ? "manual" : "automatic",
         retentionUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
         revision: 1,
       });
@@ -112,7 +127,12 @@ export async function POST(request: Request) {
         target: id,
         at: now,
       });
-      return { id };
+      return {
+        id,
+        residentId: latestResident.id,
+        residentName: latestResident.name,
+        detectedAutomatically: !manuallySelected,
+      };
     });
     if (!result)
       return Response.json(

@@ -181,7 +181,9 @@ export function RecordingWorkspace({
               <span className="eyebrow">会話した入居者</span>
               <h3>{resident?.name || "入居者を選択"}</h3>
               <p className="muted small">
-                入居者を確認してください。話者の区別は本人確認ではありません。
+                {r.residentMatch === "automatic"
+                  ? "録音冒頭の名乗りから自動判定しました。確定前に入居者を確認してください。"
+                  : "入居者を確認してください。話者の区別は本人確認ではありません。"}
               </p>
             </div>
             <div className="row">

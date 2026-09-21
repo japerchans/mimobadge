@@ -225,6 +225,23 @@ test("unknown and unassigned residents cannot process; reassignment invalidates 
   assert.equal(ready.recording.proposals.length, 0);
   assert.equal(ready.recording.draft, "");
 });
+test("correcting an automatically matched SD-card recording preserves its transcript", async () => {
+  const { state, recording } = await prepared();
+  recording.source = "sd-card";
+  recording.residentMatch = "automatic";
+  const transcript = structuredClone(recording.transcript);
+  const proposals = structuredClone(recording.proposals);
+  await executeAction(
+    state,
+    { type: "associate", id: recording.id, residentId: "sato" },
+    session,
+  );
+  assert.equal(recording.residentId, "sato");
+  assert.equal(recording.residentMatch, "manual");
+  assert.deepEqual(recording.transcript, transcript);
+  assert.deepEqual(recording.proposals, proposals);
+  assert.equal(recording.status, "review");
+});
 test("stale reviews and edits do not overwrite other caregivers", async () => {
   const { state, recording: r } = await prepared();
   await assert.rejects(

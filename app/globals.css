@@ -1692,6 +1692,22 @@ dialog::backdrop {
 .import-dialog-body {
   gap: 18px;
 }
+.auto-match-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: #fff3ef;
+  color: #85504d;
+  font-size: 13px;
+  font-weight: 650;
+}
+.auto-match-note svg {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: #e16669;
+}
 .audio-dropzone {
   width: 100%;
   min-height: 190px;

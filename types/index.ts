@@ -46,6 +46,7 @@ export type Recording = {
   error?: string;
   source: "demo" | "sd-card";
   sourceName?: string;
+  residentMatch?: "automatic" | "manual";
   retentionUntil: string;
   revision: number;
 };

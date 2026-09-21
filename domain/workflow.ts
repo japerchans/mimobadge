@@ -216,6 +216,12 @@ export async function executeAction(
     r.residentId = await new ManualResidentAssociation().associate({
       manualResidentId: input.residentId,
     });
+    if (r.source === "sd-card" && r.transcript.length) {
+      r.residentMatch = "manual";
+      r.revision++;
+      audit("Associated interaction with resident", r.id);
+      return { id: r.id };
+    }
     r.transcript = [];
     r.proposals = [];
     r.draft = "";

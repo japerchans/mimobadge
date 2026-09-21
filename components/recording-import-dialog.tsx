@@ -19,7 +19,10 @@ type ImportItem = {
   residentId: string;
   status: "waiting" | "uploading" | "done" | "error";
   error?: string;
+  invalid?: boolean;
   recordingId?: string;
+  residentName?: string;
+  detectedAutomatically?: boolean;
 };
 
 const acceptedExtensions = /\.(m4a|mp3|wav|webm|ogg|aac|flac|mp4)$/i;
@@ -60,9 +63,10 @@ export function RecordingImportDialog({
         return {
           key: crypto.randomUUID(),
           file,
-          residentId: "",
+          residentId: "auto",
           status: error ? ("error" as const) : ("waiting" as const),
           error,
+          invalid: Boolean(error),
         };
       }),
     ]);
@@ -89,7 +93,13 @@ export function RecordingImportDialog({
       setItems((current) =>
         current.map((candidate) =>
           candidate.key === item.key
-            ? { ...candidate, status: "done", recordingId: result.id }
+            ? {
+                ...candidate,
+                status: "done",
+                recordingId: result.id,
+                residentName: result.residentName,
+                detectedAutomatically: result.detectedAutomatically,
+              }
             : candidate,
         ),
       );
@@ -115,7 +125,7 @@ export function RecordingImportDialog({
 
   const startImport = async () => {
     const targets = items.filter(
-      (item) => item.residentId && item.status !== "done" && !item.error,
+      (item) => item.status !== "done" && !item.error,
     );
     if (!targets.length) return;
     setBusy(true);
@@ -131,12 +141,7 @@ export function RecordingImportDialog({
     );
   };
 
-  const ready = items.some(
-    (item) => item.residentId && item.status !== "done" && !item.error,
-  );
-  const needsResident = items.some(
-    (item) => item.status !== "done" && !item.error && !item.residentId,
-  );
+  const ready = items.some((item) => item.status !== "done" && !item.error);
 
   return (
     <Modal title="録音ファイルを取り込む" close={() => !busy && close()}>
@@ -144,6 +149,12 @@ export function RecordingImportDialog({
         <p>
           SDカードをパソコンで開き、録音ファイルをここへドラッグしてください。複数の録音をまとめて選べます。
         </p>
+        <div className="auto-match-note">
+          <Check size={17} />
+          <span>
+            録音の最初に「田中さんです」のように名前を話すと、こころんが入居者を自動で判定します。
+          </span>
+        </div>
         <button
           type="button"
           className={`audio-dropzone${dragging ? " dragging" : ""}`}
@@ -189,8 +200,10 @@ export function RecordingImportDialog({
                   <strong title={item.file.name}>{item.file.name}</strong>
                   <small>
                     {(item.file.size / 1024 / 1024).toFixed(1)}MB
-                    {item.status === "uploading" && " · 文字起こしと整理中…"}
-                    {item.status === "done" && " · 確認待ちに追加済み"}
+                    {item.status === "uploading" &&
+                      " · 文字起こし・入居者判定・整理中…"}
+                    {item.status === "done" &&
+                      ` · ${item.residentName}さん${item.detectedAutomatically ? "を自動判定" : "を選択"} · 確認待ち`}
                     {item.error && ` · ${item.error}`}
                   </small>
                 </div>
@@ -208,9 +221,7 @@ export function RecordingImportDialog({
                     <select
                       aria-label={`${item.file.name}の入居者`}
                       value={item.residentId}
-                      disabled={
-                        busy || Boolean(item.error && item.file.size > maxBytes)
-                      }
+                      disabled={busy || item.invalid}
                       onChange={(event) =>
                         setItems((current) =>
                           current.map((candidate) =>
@@ -218,47 +229,49 @@ export function RecordingImportDialog({
                               ? {
                                   ...candidate,
                                   residentId: event.target.value,
-                                  status:
-                                    candidate.status === "error" &&
-                                    !candidate.error
-                                      ? "waiting"
-                                      : candidate.status,
+                                  status: candidate.error
+                                    ? "waiting"
+                                    : candidate.status,
+                                  error: candidate.invalid
+                                    ? candidate.error
+                                    : undefined,
                                 }
                               : candidate,
                           ),
                         )
                       }
                     >
-                      <option value="">入居者を選択</option>
+                      <option value="auto">
+                        自動判定（冒頭の「〇〇さんです」）
+                      </option>
                       {residents.map((resident) => (
                         <option key={resident.id} value={resident.id}>
                           {resident.name} · {resident.room}号室
                         </option>
                       ))}
                     </select>
-                    {item.status === "error" &&
-                      !item.error?.includes("24MB") && (
-                        <button
-                          type="button"
-                          className="icon-button"
-                          aria-label={`${item.file.name}を再試行`}
-                          onClick={() =>
-                            setItems((current) =>
-                              current.map((candidate) =>
-                                candidate.key === item.key
-                                  ? {
-                                      ...candidate,
-                                      status: "waiting",
-                                      error: undefined,
-                                    }
-                                  : candidate,
-                              ),
-                            )
-                          }
-                        >
-                          <RefreshCw size={16} />
-                        </button>
-                      )}
+                    {item.status === "error" && !item.invalid && (
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`${item.file.name}を再試行`}
+                        onClick={() =>
+                          setItems((current) =>
+                            current.map((candidate) =>
+                              candidate.key === item.key
+                                ? {
+                                    ...candidate,
+                                    status: "waiting",
+                                    error: undefined,
+                                  }
+                                : candidate,
+                            ),
+                          )
+                        }
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="icon-button"
@@ -283,11 +296,6 @@ export function RecordingImportDialog({
         <p className="muted small">
           会話全文は記録確定後、または7日後に削除します。メモリーブレインへ反映する前に、必ず職員が内容を確認します。
         </p>
-        {needsResident && (
-          <p className="error" role="status">
-            取り込む録音ごとに、会話した入居者を選択してください。
-          </p>
-        )}
         {notice && (
           <p className="import-notice" role="status">
             {notice}
@@ -301,7 +309,7 @@ export function RecordingImportDialog({
         <button
           type="button"
           className="primary"
-          disabled={busy || !ready || needsResident}
+          disabled={busy || !ready}
           onClick={startImport}
         >
           <FolderOpen size={16} />
