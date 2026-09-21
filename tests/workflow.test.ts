@@ -54,6 +54,11 @@ test("vertical slice requires review, consolidates memory, and discards transcri
     state.records.filter((record) => record.recordingId === r.id).length,
     1,
   );
+  assert.equal(
+    state.records.find((record) => record.recordingId === r.id)?.structured
+      ?.format,
+    "F-SOAIP",
+  );
   const interests = state.information.filter(
     (i) =>
       i.residentId === "tanaka" &&
@@ -68,7 +73,7 @@ test("vertical slice requires review, consolidates memory, and discards transcri
     (item) => item.kind === "family" && item.recordingId === r.id,
   );
   assert.ok(familyReport);
-  assert.match(familyReport.content, /本日のご様子/);
+  assert.match(familyReport.content, /ご様子/);
 });
 test("rejected facts never enter resident memory or generated documentation", async () => {
   const { state, recording: r } = await prepared();

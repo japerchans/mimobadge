@@ -20,18 +20,21 @@ export class DemoMnemoNet implements MnemoNetProcessor {
         match: /眠れなかった/,
         kind: "care" as const,
         category: "Sleep",
+        recordField: "subjective" as const,
         content: "昨夜はよく眠れなかったとの訴えあり。",
       },
       {
         match: /全部食べ/,
         kind: "care" as const,
         category: "Meals",
+        recordField: "objective" as const,
         content: "朝食は全量摂取。",
       },
       {
         match: /着替え.*手伝/,
         kind: "care" as const,
         category: "Assistance",
+        recordField: "intervention" as const,
         content: "朝の更衣を一部介助。",
       },
       {

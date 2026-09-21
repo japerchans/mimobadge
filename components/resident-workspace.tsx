@@ -1,10 +1,17 @@
 "use client";
 import type { Information, Resident, WorkspaceResponse } from "@/types";
-import { ChevronRight, FileText, MessageCircle, Send } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  MessageCircle,
+  Send,
+  Smile,
+} from "lucide-react";
 import Link from "next/link";
 import { KokologMark } from "./kokolog-mark";
 import { useEffect, useRef, useState } from "react";
 import { ja } from "@/lib/ja";
+import { moodTimeline } from "@/domain/mood";
 import {
   Avatar,
   CaregiverAvatar,
@@ -40,6 +47,7 @@ export function ResidentWorkspace({
   }, [messages, busy, chatError]);
   const items = data.information.filter((i) => i.residentId === r.id);
   const profile = items.filter((i) => i.kind === "profile");
+  const moodPoints = moodTimeline(data.information, r.id);
   const greeting = `${r.name}さんについて、知りたいことを聞いてください。確認済みの記録と記憶グラフをもとにお答えします。`;
   const ask = async (text: string) => {
     const next = text.trim();
@@ -260,6 +268,26 @@ export function ResidentWorkspace({
             </section>
           ) : tab === "profile" ? (
             <>
+              {moodPoints.length > 0 && (
+                <section className="mood-timeline" aria-label="最近の様子">
+                  <div className="row">
+                    <Smile size={18} />
+                    <h2>最近の様子</h2>
+                  </div>
+                  <p className="muted small">
+                    会話で確認できた表情や気分の記録です。診断や推測ではありません。
+                  </p>
+                  <div>
+                    {moodPoints.map((point, index) => (
+                      <article key={`${point.source}-${point.date}-${index}`}>
+                        <time>{formatDate(point.date)}</time>
+                        <strong>{point.label}</strong>
+                        <p>{point.content}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               <p className="muted">
                 項目を選ぶと、出典の確認・編集・削除ができます。
               </p>

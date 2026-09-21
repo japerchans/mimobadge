@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CareRecordView } from "./care-record-view";
 import {
   Action,
   Avatar,
@@ -195,7 +196,16 @@ export function Records({ data }: { data: WorkspaceResponse }) {
                   </span>
                 </div>
                 <div className="record-content">
-                  <p lang="ja">{record.content}</p>
+                  <CareRecordView
+                    record={record.structured}
+                    empty={record.content}
+                  />
+                  {record.structured && (
+                    <details className="record-summary">
+                      <summary>経過要約</summary>
+                      <p>{record.content}</p>
+                    </details>
+                  )}
                   <div className="row spread">
                     <span className="muted small">
                       確認した職員：{" "}

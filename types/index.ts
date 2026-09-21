@@ -30,6 +30,31 @@ export type Proposal = {
   evidence: string;
   status: Approval;
   originalContent?: string;
+  recordField?: CareRecordField;
+};
+export type CareRecordField =
+  "focus" | "subjective" | "objective" | "assessment" | "intervention" | "plan";
+export type CareMeasurement = {
+  kind:
+    | "blood-pressure"
+    | "temperature"
+    | "pulse"
+    | "spo2"
+    | "meal"
+    | "fluid"
+    | "elimination";
+  label: string;
+  value: string;
+};
+export type StructuredCareRecord = {
+  format: "F-SOAIP";
+  focus: string[];
+  subjective: string[];
+  objective: string[];
+  assessment: string[];
+  intervention: string[];
+  plan: string[];
+  measurements: CareMeasurement[];
 };
 export type Recording = {
   id: string;
@@ -71,6 +96,7 @@ export type CareRecord = {
   content: string;
   createdAt: string;
   approvedBy: string;
+  structured?: StructuredCareRecord;
 };
 export type AuditLog = {
   id: string;

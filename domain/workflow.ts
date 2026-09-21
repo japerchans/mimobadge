@@ -7,6 +7,8 @@ import {
   ManualResidentAssociation,
 } from "@/services/providers";
 import { rebuildMemoryGraph } from "./memory-graph";
+import { buildStructuredCareRecord } from "./care-record";
+import { generateFamilyReportWithAI } from "./family-report-ai";
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("transfer"), residentId: z.string().nullable() }),
   z.object({
@@ -358,22 +360,15 @@ export async function executeAction(
           content: r.draft,
           createdAt: now,
           approvedBy: session.userId,
+          structured: buildStructuredCareRecord(r.proposals),
         });
       if (accepted.length) {
-        const reportContent = [
-          "ご家族様へ",
-          `${reviewedResident.name}さんの本日のご様子をお知らせします。`,
-          r.draft,
-          accepted.some((item) => item.kind === "profile")
-            ? `会話の中では、${accepted
-                .filter((item) => item.kind === "profile")
-                .map((item) => item.content.replace(/[。.]$/, ""))
-                .join("、")}といったお話もありました。`
-            : "",
-          "送信前に職員が内容を確認してください。",
-        ]
-          .filter(Boolean)
-          .join("\n\n");
+        const reportContent = await generateFamilyReportWithAI({
+          key: process.env.OPENAI_API_KEY,
+          resident: reviewedResident,
+          information: state.information,
+          fallback: familyReportText(state, reviewedResident.id),
+        });
         state.handoffs.unshift({
           id: crypto.randomUUID(),
           createdAt: now,
@@ -435,12 +430,22 @@ export async function executeAction(
     return { id: input.id };
   }
   if (input.type === "create-family-report") {
+    const resident = state.residents.find(
+      (item) => item.id === input.residentId,
+    );
+    if (!resident) throw new DomainError("Resident not found.", 404);
+    const fallback = familyReportText(state, input.residentId);
     const report = {
       id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
       createdBy: session.userId,
-      content: familyReportText(state, input.residentId),
+      content: await generateFamilyReportWithAI({
+        key: process.env.OPENAI_API_KEY,
+        resident,
+        information: state.information,
+        fallback,
+      }),
       kind: "family" as const,
       residentId: input.residentId,
     };

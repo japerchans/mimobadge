@@ -1703,6 +1703,140 @@ dialog::backdrop {
   font-size: 13px;
   font-weight: 650;
 }
+
+.structured-care-record {
+  display: grid;
+  gap: 16px;
+}
+
+.care-measurements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.care-measurements > div {
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: #e8f1f4;
+  border: 1px solid #d2e2e8;
+}
+
+.care-measurements span,
+.care-measurements strong {
+  display: block;
+}
+
+.care-measurements span {
+  color: #526372;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.care-measurements strong {
+  margin-top: 4px;
+  color: #203542;
+  font-size: 17px;
+}
+
+.fsoaip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fsoaip-field {
+  padding: 15px 16px;
+  border: 1px solid #dce4e9;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.fsoaip-field h4 {
+  margin: 0 0 7px;
+  color: #2f7169;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.fsoaip-field p {
+  margin: 5px 0 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.record-summary {
+  margin-top: 15px;
+  color: #465968;
+}
+
+.record-summary summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.record-summary textarea,
+.record-summary > p {
+  margin-top: 12px;
+}
+
+.care-record-fallback {
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+
+.mood-timeline {
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fff7ec, #f7ece9);
+  border: 1px solid #f0ddd5;
+  box-shadow: var(--raised-shadow-small);
+  margin-bottom: 18px;
+}
+
+.mood-timeline h2 {
+  font-size: 16px;
+}
+
+.mood-timeline > div:last-child {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.mood-timeline article {
+  display: grid;
+  grid-template-columns: 84px 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding-top: 9px;
+  border-top: 1px solid rgba(186, 127, 105, 0.18);
+}
+
+.mood-timeline time,
+.mood-timeline strong {
+  font-size: 12px;
+}
+
+.mood-timeline strong {
+  color: #a65045;
+}
+
+.mood-timeline article p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 680px) {
+  .fsoaip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mood-timeline article {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
 .auto-match-note svg {
   flex: 0 0 auto;
   margin-top: 3px;

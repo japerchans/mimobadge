@@ -1,6 +1,7 @@
 "use client";
 import { ja } from "@/lib/ja";
 import { generateDraft } from "@/domain/mnemonet";
+import { buildStructuredCareRecord } from "@/domain/care-record";
 import type { Proposal, Recording, WorkspaceResponse } from "@/types";
 import {
   ArrowLeft,
@@ -27,6 +28,7 @@ import {
   Status,
   time,
 } from "./shared";
+import { CareRecordView } from "./care-record-view";
 export const stages = [
   "録音を準備",
   "話者を区別",
@@ -51,6 +53,7 @@ export function RecordingWorkspace({
   const [confirm, setConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const resident = data.residents.find((p) => p.id === r.residentId);
+  const structuredDraft = buildStructuredCareRecord(proposals);
   useEffect(() => {
     setProposals(r.proposals);
     setDraft(r.draft);
@@ -153,8 +156,20 @@ export function RecordingWorkspace({
               <Status value="approved" />
             </div>
             <div className="final-record" lang="ja">
-              {data.records.find((record) => record.recordingId === r.id)
-                ?.content || "この録音から保存された介護記録はありません。"}
+              {(() => {
+                const record = data.records.find(
+                  (candidate) => candidate.recordingId === r.id,
+                );
+                return (
+                  <CareRecordView
+                    record={record?.structured}
+                    empty={
+                      record?.content ||
+                      "この録音から保存された介護記録はありません。"
+                    }
+                  />
+                );
+              })()}
             </div>
           </section>
           <section className="panel approved-items">
@@ -450,7 +465,10 @@ export function RecordingWorkspace({
                   )}
                   <section className="panel draft-panel">
                     <div className="panel-header">
-                      <h2>介護記録の下書き</h2>
+                      <div>
+                        <h2>介護記録の下書き</h2>
+                        <span className="muted small">F-SOAIP形式</span>
+                      </div>
                       <button
                         className="text-link"
                         onClick={() => setDraft(generateDraft(proposals))}
@@ -460,17 +478,21 @@ export function RecordingWorkspace({
                       </button>
                     </div>
                     <div className="draft-body">
-                      <label className="sr-only" htmlFor="draft">
-                        介護記録の下書き
-                      </label>
-                      <textarea
-                        id="draft"
-                        lang="ja"
-                        rows={5}
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        disabled={saving}
-                      />
+                      <CareRecordView record={structuredDraft} />
+                      <details className="record-summary" open>
+                        <summary>経過要約を確認・編集</summary>
+                        <label className="sr-only" htmlFor="draft">
+                          介護記録の下書き
+                        </label>
+                        <textarea
+                          id="draft"
+                          lang="ja"
+                          rows={5}
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          disabled={saving}
+                        />
+                      </details>
                       <p className="muted small">
                         残す内容と文章が一致しているか確認してください。
                       </p>

@@ -177,7 +177,12 @@ async function transcribe(file: File, key: string, prompt = "") {
   form.set("file", file, file.name || "recording.webm");
   form.set("model", process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe");
   form.set("language", "ja");
-  if (prompt) form.set("prompt", prompt);
+  const careContext =
+    "介護施設での日本語会話です。人名、血圧、体温、脈拍、SpO2、食事量、水分量、排泄を正確に文字にしてください。聞き取れる笑い声は（笑い）、沈黙は（沈黙）と記録してください。";
+  form.set(
+    "prompt",
+    prompt ? `${careContext}\n直前の文脈: ${prompt}` : careContext,
+  );
   const response = await fetch(
     "https://api.openai.com/v1/audio/transcriptions",
     {
@@ -232,8 +237,8 @@ async function extractProposals({
         store: false,
         max_output_tokens: 1600,
         instructions:
-          "あなたは介護施設の共有知識づくりを支援します。会話から、介護記録に残すべき客観的な内容と、本人の生活歴・好み・性格・人間関係・最近の気分・ケア上の注意点として今後の会話やケアに役立つプロフィールを抽出してください。性格や気分は本人の明示的な発言または観察できる事実だけを扱い、診断、服薬判断、根拠のない推測はしません。雑談だけの文はignoredにしてください。JSONだけを返してください。",
-        input: `対象者: ${residentName}\n会話:\n${transcriptText.slice(0, 12000)}\n\n次のJSON形式で返してください: {"proposals":[{"kind":"care|profile|ignored","category":"短い英語カテゴリ","content":"日本語の短い文","evidence":"根拠の短い抜粋"}],"draft":"介護記録の下書き。careがない場合は空文字","context":[]}`,
+          "あなたは介護施設の共有知識づくりを支援します。会話から、介護記録に残す事実と、本人の生活歴・好み・性格・人間関係・最近の気分・ケア上の注意点を抽出してください。介護記録は厚生労働省の項目形式記録の考え方に沿い、F=着眼点、S=本人や家族の言葉、O=観察・状態・バイタル等の数値、A=S/Oに基づく職員の判断、I=実際に行った支援・声かけ・介助、P=次の対応に分けます。発言された血圧・体温・脈拍・SpO2・食事量・水分量・排泄は単位を保って抽出してください。笑顔や笑い、表情、気分は発言または観察できる事実がある場合だけMoodとして抽出し、過去との変化を推測しません。痛む場所、避けるべき声かけやNG対応はプロフィールとして明確に残します。診断、服薬判断、根拠のない因果関係や数値の補正はしません。雑談だけの文はignoredにしてください。JSONだけを返してください。",
+        input: `対象者: ${residentName}\n会話:\n${transcriptText.slice(0, 12000)}\n\n次のJSON形式で返してください: {"proposals":[{"kind":"care|profile|ignored","category":"Meals|Hydration|Elimination|Vitals|Sleep|Mood|Activity|Assistance|Medication|Pain or discomfort|Avoid or NG|Former occupation|Interests|Family|Life history|Preferences|Personality|Care preferences|Observation","recordField":"focus|subjective|objective|assessment|intervention|plan（careのみ。profile/ignoredは省略）","content":"日本語の短い文","evidence":"根拠の短い抜粋"}],"draft":"介護記録の簡潔な経過要約。careがない場合は空文字","context":[]}`,
       }),
     });
     if (!response.ok) throw new Error("Extraction failed");
@@ -253,6 +258,7 @@ async function extractProposals({
         category?: string;
         content?: string;
         evidence?: string;
+        recordField?: string;
       }[];
       draft?: string;
       context?: string[];
@@ -274,6 +280,18 @@ async function extractProposals({
           evidence: String(item.evidence || "")
             .trim()
             .slice(0, 1500),
+          recordField:
+            kind === "care" &&
+            [
+              "focus",
+              "subjective",
+              "objective",
+              "assessment",
+              "intervention",
+              "plan",
+            ].includes(String(item.recordField))
+              ? (item.recordField as Proposal["recordField"])
+              : undefined,
           status: kind === "ignored" ? "rejected" : "pending",
         };
       })
