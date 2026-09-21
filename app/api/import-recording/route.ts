@@ -2,24 +2,11 @@ import { getSession, sameOrigin } from "@/lib/auth";
 import { transaction } from "@/db/repository";
 import { DemoMnemoNet, generateDraft } from "@/domain/mnemonet";
 import { detectResidentFromIntroduction } from "@/domain/resident-detection";
+import { isSupportedRecordingFile } from "@/domain/recording-file";
 import type { Proposal, Segment } from "@/types";
 
 export const maxDuration = 60;
 
-const allowedTypes = new Set([
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/mp4",
-  "audio/mp4a-latm",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/webm",
-  "audio/ogg",
-  "audio/aac",
-  "audio/flac",
-  "video/mp4",
-  "application/octet-stream",
-]);
 const maxBytes = 24 * 1024 * 1024;
 
 export async function POST(request: Request) {
@@ -56,7 +43,7 @@ export async function POST(request: Request) {
         { error: "音声ファイルは24MB以内で選択してください。" },
         { status: 413 },
       );
-    if (file.type && !allowedTypes.has(file.type))
+    if (!isSupportedRecordingFile(file))
       return Response.json(
         { error: "対応している音声ファイルを選択してください。" },
         { status: 400 },
