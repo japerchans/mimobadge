@@ -1659,28 +1659,12 @@ dialog::backdrop {
 
 /* Kokoron identity and SD-card intake */
 .brand-logo {
-  display: inline-flex;
-  align-items: center;
-  color: #356bc4;
-  font-size: 46px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.12em;
-  white-space: nowrap;
+  display: inline-block;
+  width: 300px;
+  aspect-ratio: 2163 / 727;
 }
 .brand-logo.compact {
-  font-size: 31px;
-}
-.brand-heart {
-  display: inline-grid;
-  place-items: center;
-  width: 0.9em;
-  height: 0.9em;
-  margin: 0 0.08em 0 0.1em;
-}
-.brand-heart svg {
-  width: 100%;
-  height: 100%;
+  width: 190px;
 }
 .boot .brand-logo,
 .login .brand-logo {
@@ -1968,10 +1952,10 @@ dialog::backdrop {
 }
 @media (max-width: 680px) {
   .brand-logo {
-    font-size: 39px;
+    width: 260px;
   }
   .brand-logo.compact {
-    font-size: 29px;
+    width: 170px;
   }
   .audio-dropzone {
     min-height: 165px;
@@ -2657,7 +2641,7 @@ dialog::backdrop {
   }
 }
 
-/* Blue and coral follow the supplied Kokolog wordmark. */
+/* Blue and coral follow the supplied Kokoron wordmark. */
 :root {
   --accent: #356bc4;
   --accent-soft: #e3edff;
@@ -2957,6 +2941,17 @@ dialog::backdrop {
 .resident-section-heading p {
   margin-top: 5px;
   font-size: 13px;
+}
+
+.brand-logo img,
+.sidebar .brand .brand-logo img,
+.boot .brand-logo img,
+.login .brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 @media (max-width: 680px) {
