@@ -4,12 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowRight,
-  BookHeart,
   Check,
   ClipboardCheck,
-  Fish,
   Heart,
-  MapPin,
   MessageCircleMore,
   ShieldCheck,
   Sparkles,
@@ -202,97 +199,17 @@ function CareRecordScreen() {
 }
 
 function ProfileScreen() {
-  const nodes = [
-    {
-      className: styles.nodeHobby,
-      icon: <Fish size={20} />,
-      label: "趣味",
-      value: "海釣り",
-      note: "若い頃から30年以上",
-    },
-    {
-      className: styles.nodePerson,
-      icon: <Heart size={20} />,
-      label: "大切な人",
-      value: "妻・洋子さん",
-      note: "一緒に釣りへ出かけた",
-    },
-    {
-      className: styles.nodePlace,
-      icon: <MapPin size={20} />,
-      label: "思い出の場所",
-      value: "三浦の海",
-      note: "アジ釣りの思い出",
-    },
-    {
-      className: styles.nodeCare,
-      icon: <ShieldCheck size={20} />,
-      label: "ケア上の注意",
-      value: "立ち上がり時は右膝に注意",
-      note: "2026/9/22 更新",
-    },
-  ];
   return (
-    <div className={styles.profileLayout}>
-      <section className={`${styles.panel} ${styles.profileCard}`}>
-        <Image
-          src="/avatars/yamamoto.png"
-          alt="山本正一さん"
-          width={92}
-          height={92}
-        />
-        <span className={styles.liveBadge}>会話から更新中</span>
-        <h2>山本 正一さん</h2>
-        <p>
-          穏やかで、人に昔の話をすることが好き。海や釣りの話題では特に表情が明るくなる。
-        </p>
-        <div className={styles.profileMeta}>
-          <span>82歳</span>
-          <span>203号室</span>
-          <span>要介護2</span>
-        </div>
-        <div className={styles.sourceNote}>
-          <MessageCircleMore size={17} />
-          <span>
-            <b>今日の会話から2件追加</b>
-            <small>元の発言と日時をいつでも確認できます</small>
-          </span>
-        </div>
-      </section>
-      <section className={`${styles.panel} ${styles.memoryMap}`}>
-        <div className={styles.mapTitle}>
-          <div>
-            <small>施設で共有する理解</small>
-            <h2>山本さんの生活歴プロフィール</h2>
-          </div>
-          <BookHeart size={24} />
-        </div>
-        <div className={styles.graph}>
-          <div className={styles.centerNode}>
-            <Image src="/avatars/yamamoto.png" alt="" width={54} height={54} />
-            <b>山本さん</b>
-            <small>その人らしさ</small>
-          </div>
-          {nodes.map((node) => (
-            <article
-              className={`${styles.memoryNode} ${node.className}`}
-              key={node.label}
-            >
-              {node.icon}
-              <span>
-                <small>{node.label}</small>
-                <b>{node.value}</b>
-                <em>{node.note}</em>
-              </span>
-            </article>
-          ))}
-        </div>
-        <p className={styles.mapFootnote}>
-          <Sparkles size={16} />{" "}
-          会話を重ねるたびに、職員みんなの「山本さんへの理解」が深まります
-        </p>
-      </section>
-    </div>
+    <section className={`${styles.panel} ${styles.contextGraphPanel}`}>
+      <Image
+        src="/showcase-context-graph.png"
+        alt="山本さんの人・場所・時期・趣味・出来事・ケア上の注意を関連付けた文脈グラフ"
+        width={1672}
+        height={941}
+        priority
+        className={styles.contextGraphImage}
+      />
+    </section>
   );
 }
 

@@ -366,192 +366,19 @@
   font-size: 10px;
 }
 
-.profileLayout {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 24px;
-  min-height: 516px;
-}
-.profileCard {
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.profileCard > img {
-  border-radius: 28px;
-  background: var(--demo-blue-soft);
-  box-shadow: 0 8px 25px rgba(50, 94, 153, 0.15);
-}
-.liveBadge {
-  margin: 20px 0 9px;
-  color: #23716a;
-  background: #e5f4f0;
-}
-.profileCard h2 {
-  font-size: 21px;
-}
-.profileCard > p {
-  color: #536278;
-  font-size: 13px;
-  line-height: 1.85;
-  margin: 12px 0 17px;
-}
-.profileMeta {
-  gap: 7px;
-  flex-wrap: wrap;
-}
-.profileMeta span {
-  color: #5d6d83;
-  background: #f0f4f8;
-  padding: 5px 9px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 700;
-}
-.sourceNote {
-  margin-top: auto;
-  gap: 10px;
-  padding: 13px;
-  width: 100%;
-  border-radius: 14px;
-  background: var(--demo-blue-soft);
-  color: var(--demo-blue);
-}
-.sourceNote > span {
-  flex-direction: column;
-  align-items: flex-start;
-}
-.sourceNote b {
-  color: #2a579c;
-  font-size: 11px;
-}
-.sourceNote small {
-  color: #60799d;
-  font-size: 9px;
-}
-.memoryMap {
-  padding: 24px 28px 19px;
-}
-.mapTitle {
-  justify-content: space-between;
-}
-.mapTitle > svg {
-  color: var(--demo-coral);
-}
-.graph {
-  position: relative;
-  height: 375px;
-  margin-top: 7px;
-}
-.graph::before {
-  content: "";
-  position: absolute;
-  inset: 54px 115px;
-  border: 1px dashed #b9cce9;
-  border-radius: 50%;
-}
-.centerNode {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 132px;
-  height: 132px;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(145deg, #fff, #edf4ff);
-  border: 4px solid #fff;
-  box-shadow: 0 12px 30px rgba(52, 120, 246, 0.22);
-}
-.centerNode img {
-  border-radius: 50%;
-  background: #e9f1ff;
-}
-.centerNode b {
-  margin-top: 4px;
-  font-size: 13px;
-}
-.centerNode small {
-  color: #718097;
-  font-size: 9px;
-}
-.memoryNode {
-  position: absolute;
-  z-index: 3;
-  width: 225px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 15px;
+.contextGraphPanel {
+  width: min(100%, 960px);
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
   background: #fff;
-  border: 1px solid #e0e7f0;
-  border-radius: 16px;
-  box-shadow: 0 8px 22px rgba(49, 74, 110, 0.1);
 }
-.memoryNode > svg {
-  flex: none;
-  color: var(--demo-blue);
-}
-.memoryNode span {
-  display: flex;
-  flex-direction: column;
-}
-.memoryNode small {
-  color: #7d8a9b;
-  font-size: 9px;
-  font-weight: 700;
-}
-.memoryNode b {
-  color: #28354a;
-  font-size: 12px;
-  line-height: 1.45;
-}
-.memoryNode em {
-  color: #78869a;
-  font-size: 9px;
-  font-style: normal;
-}
-.nodeHobby {
-  left: 12px;
-  top: 24px;
-}
-.nodePerson {
-  right: 12px;
-  top: 24px;
-}
-.nodePlace {
-  left: 12px;
-  bottom: 25px;
-}
-.nodeCare {
-  right: 12px;
-  bottom: 25px;
-}
-.nodePerson > svg {
-  color: var(--demo-coral);
-}
-.nodePlace > svg {
-  color: var(--demo-gold);
-}
-.nodeCare > svg {
-  color: #2f8b74;
-}
-.mapFootnote {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 7px;
-  color: #526a8e;
-  font-size: 11px;
-  font-weight: 700;
-}
-.mapFootnote svg {
-  color: var(--demo-blue);
+.contextGraphImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .summaryItems {
@@ -715,12 +542,6 @@
   .flowArrow {
     transform: rotate(90deg);
   }
-  .profileLayout {
-    grid-template-columns: 1fr;
-  }
-  .profileCard {
-    min-height: 360px;
-  }
 }
 
 @media (max-width: 620px) {
@@ -756,34 +577,7 @@
   .transcriptPanel,
   .recordPanel,
   .daySummary,
-  .letterCard,
-  .memoryMap {
+  .letterCard {
     padding: 19px;
-  }
-  .graph {
-    height: auto;
-    display: grid;
-    gap: 10px;
-    padding-top: 15px;
-  }
-  .graph::before {
-    display: none;
-  }
-  .centerNode,
-  .memoryNode {
-    position: static;
-    transform: none;
-    width: 100%;
-    height: auto;
-    border-radius: 16px;
-  }
-  .centerNode {
-    padding: 15px;
-    flex-direction: row;
-    gap: 10px;
-    justify-content: flex-start;
-  }
-  .memoryNode {
-    min-height: 76px;
   }
 }
