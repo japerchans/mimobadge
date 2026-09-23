@@ -3215,3 +3215,259 @@ dialog::backdrop {
     flex-direction: column;
   }
 }
+
+/* Resident-day review: recordings stay as source material, the day is the work unit. */
+.daily-inbox .panel-header {
+  margin-bottom: 10px;
+}
+
+.daily-inbox-list {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-inbox-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 15px;
+  background: #edf2f6;
+  box-shadow: var(--raised-shadow-small);
+}
+
+.daily-inbox-row:hover {
+  transform: translateY(-1px);
+}
+
+.daily-inbox-row > div {
+  display: grid;
+  min-width: 0;
+}
+
+.daily-inbox-row > div span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.daily-inbox-row > b {
+  color: #285bb1;
+  font-size: 13px;
+}
+
+.daily-exceptions {
+  margin-top: 18px;
+}
+
+.daily-review-page {
+  padding-bottom: 98px;
+}
+
+.daily-review-page .page-heading {
+  margin-bottom: 22px;
+}
+
+.daily-review-recordings {
+  display: grid;
+  gap: 22px;
+}
+
+.daily-recording {
+  padding: 0;
+  overflow: hidden;
+}
+
+.daily-recording > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #e8eef5;
+}
+
+.daily-recording > header > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.daily-recording > header h2 {
+  font-size: 17px;
+}
+
+.daily-recording > header p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.daily-recording-number {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: #f9a29d;
+  color: #6a2928;
+  font-weight: 750;
+}
+
+.daily-recording > header details {
+  position: relative;
+}
+
+.daily-recording > header summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #285bb1;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.daily-recording > header summary::-webkit-details-marker {
+  display: none;
+}
+
+.daily-transcript {
+  display: grid;
+  gap: 10px;
+  width: min(540px, 72vw);
+  max-height: 340px;
+  margin-top: 14px;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 14px;
+  background: #f6f8fb;
+  box-shadow: var(--inset-shadow);
+}
+
+.daily-transcript > div {
+  display: grid;
+  gap: 2px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: white;
+}
+
+.daily-transcript > .speaker-resident {
+  margin-left: 34px;
+  background: #e5efff;
+}
+
+.daily-transcript strong {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.daily-recording > .care-record-document {
+  margin: 18px 20px;
+}
+
+.daily-profile-candidates {
+  margin: 0 20px 20px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  background: #e8eef5;
+}
+
+.daily-profile-candidates summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.daily-profile-candidates label {
+  display: grid;
+  grid-template-columns: auto 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.daily-profile-candidates input {
+  margin: 0;
+}
+
+.daily-profile-candidates input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  box-shadow: none;
+}
+
+.daily-review-submit {
+  position: sticky;
+  z-index: 5;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 17px;
+  background: rgba(237, 242, 246, 0.96);
+  box-shadow: 0 12px 32px rgba(81, 96, 113, 0.22);
+  backdrop-filter: blur(12px);
+}
+
+.daily-review-submit > div {
+  display: grid;
+}
+
+.daily-review-submit span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.daily-review-complete {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.daily-review-complete > div {
+  flex: 1;
+}
+
+@media (max-width: 680px) {
+  .daily-inbox-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .daily-inbox-row > b {
+    display: none;
+  }
+
+  .daily-recording > header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .daily-transcript {
+    width: 100%;
+  }
+
+  .daily-profile-candidates label {
+    grid-template-columns: auto 1fr;
+  }
+
+  .daily-profile-candidates label > input:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .daily-review-submit,
+  .daily-review-complete {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .daily-review-submit button,
+  .daily-review-complete .button {
+    width: 100%;
+  }
+}

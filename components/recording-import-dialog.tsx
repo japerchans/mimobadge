@@ -26,7 +26,6 @@ type ImportItem = {
   status: "waiting" | "uploading" | "done" | "error";
   error?: string;
   invalid?: boolean;
-  recordingId?: string;
   residentName?: string;
   detectedAutomatically?: boolean;
   progress?: string;
@@ -38,12 +37,10 @@ export function RecordingImportDialog({
   residents,
   close,
   refresh,
-  openRecording,
 }: {
   residents: Resident[];
   close: () => void;
   refresh: () => Promise<void>;
-  openRecording: (id: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<ImportItem[]>([]);
@@ -158,7 +155,6 @@ export function RecordingImportDialog({
             ? {
                 ...candidate,
                 status: "done",
-                recordingId: result.id,
                 residentName: result.residentName,
                 detectedAutomatically: result.detectedAutomatically,
                 progress: undefined,
@@ -200,7 +196,7 @@ export function RecordingImportDialog({
     setBusy(false);
     setNotice(
       completed === targets.length
-        ? `${completed}件を確認待ちに追加しました。`
+        ? `${completed}件を入居者ごとの1日分に追加しました。`
         : `${completed}件を追加しました。失敗したファイルは再試行できます。`,
     );
   };
@@ -267,19 +263,15 @@ export function RecordingImportDialog({
                     {item.status === "uploading" &&
                       ` · ${item.progress || "話者を区別しながら文字起こし中…"}`}
                     {item.status === "done" &&
-                      ` · ${item.residentName}さん${item.detectedAutomatically ? "を自動判定" : "を選択"} · 確認待ち`}
+                      ` · ${item.residentName}さん${item.detectedAutomatically ? "を自動判定" : "を選択"} · 1日分に追加済み`}
                     {item.error && ` · ${item.error}`}
                   </small>
                 </div>
                 {item.status === "done" ? (
-                  <button
-                    type="button"
-                    className="small-button import-open"
-                    onClick={() => openRecording(item.recordingId!)}
-                  >
+                  <span className="small-button import-open">
                     <Check size={14} />
-                    確認する
-                  </button>
+                    追加済み
+                  </span>
                 ) : (
                   <>
                     <select
@@ -358,7 +350,7 @@ export function RecordingImportDialog({
           </div>
         )}
         <p className="muted small">
-          会話全文は記録確定後、または7日後に削除します。メモリーブレインへ反映する前に、必ず職員が内容を確認します。
+          会話全文は1日分の記録確定後、または7日後に削除します。職員は入居者ごとにまとめて内容を確認します。
         </p>
         {notice && (
           <p className="import-notice" role="status">

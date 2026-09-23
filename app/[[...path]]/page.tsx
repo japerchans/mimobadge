@@ -13,8 +13,13 @@ export default async function Page({
     path[0] === "residents" &&
     path.length === 3 &&
     ["records", "profile", "family"].includes(path[2]);
+  const residentDailyReviewRoute =
+    path[0] === "residents" &&
+    path.length === 4 &&
+    path[2] === "review" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(path[3]);
   if (
-    (path.length > 2 && !residentTabRoute) ||
+    (path.length > 2 && !residentTabRoute && !residentDailyReviewRoute) ||
     (path[0] &&
       ![
         "dashboard",

@@ -63,6 +63,22 @@ const structuredCareRecordSchema = z.object({
     .max(50)
     .optional(),
 });
+const reviewSubmissionSchema = z.object({
+  id: z.string(),
+  revision: z.number().int(),
+  draft: z.string().max(5000),
+  structuredDraft: structuredCareRecordSchema.optional(),
+  proposals: z
+    .array(
+      z.object({
+        id: z.string(),
+        content: z.string().trim().min(1).max(1500),
+        status: z.enum(["pending", "edited", "rejected", "approved"]),
+      }),
+    )
+    .max(50),
+});
+type ReviewSubmission = z.infer<typeof reviewSubmissionSchema>;
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("transfer"), residentId: z.string().nullable() }),
   z.object({
@@ -79,22 +95,15 @@ export const actionSchema = z.discriminatedUnion("type", [
     id: z.string(),
     residentId: z.string(),
   }),
-  z.object({
+  reviewSubmissionSchema.extend({
     type: z.literal("review"),
-    id: z.string(),
-    revision: z.number().int(),
-    draft: z.string().max(5000),
-    structuredDraft: structuredCareRecordSchema.optional(),
-    proposals: z
-      .array(
-        z.object({
-          id: z.string(),
-          content: z.string().trim().min(1).max(1500),
-          status: z.enum(["pending", "edited", "rejected", "approved"]),
-        }),
-      )
-      .max(50),
     approve: z.boolean(),
+  }),
+  z.object({
+    type: z.literal("review-day"),
+    residentId: z.string(),
+    reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    recordings: z.array(reviewSubmissionSchema).min(1).max(30),
   }),
   z.object({
     type: z.literal("edit-information"),
@@ -420,23 +429,30 @@ export async function executeAction(
     }
     return { id: r.id };
   }
-  if (input.type === "review") {
-    const r = getRecording(input.id);
-    if (r.status === "completed" && input.approve) return { id: r.id };
+  const validateReview = (submission: ReviewSubmission) => {
+    const r = getRecording(submission.id);
     if (r.status !== "review")
       throw new DomainError("This recording is not ready for review.");
-    if (r.revision !== input.revision)
+    if (r.revision !== submission.revision)
       throw new DomainError(
         "This review changed in another window. Reload before saving.",
         409,
       );
     if (
-      input.proposals.length !== r.proposals.length ||
-      new Set(input.proposals.map((p) => p.id)).size !== r.proposals.length
+      submission.proposals.length !== r.proposals.length ||
+      new Set(submission.proposals.map((p) => p.id)).size !== r.proposals.length
     )
       throw new DomainError("Review items do not match.");
+    return r;
+  };
+  const applyReview = async (
+    submission: ReviewSubmission,
+    approve: boolean,
+    updateFamilyReport: boolean,
+  ) => {
+    const r = validateReview(submission);
     for (const p of r.proposals) {
-      const edit = input.proposals.find((x) => x.id === p.id);
+      const edit = submission.proposals.find((x) => x.id === p.id);
       if (!edit) throw new DomainError("Review item not found.");
       if (p.kind === "ignored") continue;
       const changed = edit.content !== p.content;
@@ -451,11 +467,11 @@ export async function executeAction(
             ? "edited"
             : "pending";
     }
-    r.draft = input.draft.trim();
-    const structuredDraft = (input.structuredDraft ||
+    r.draft = submission.draft.trim();
+    const structuredDraft = (submission.structuredDraft ||
       buildStructuredCareRecord(r.proposals)) as StructuredCareRecord;
     r.structuredDraft = structuredDraft;
-    if (input.approve) {
+    if (approve) {
       if (!r.residentId) throw new DomainError("Select a resident first.");
       const reviewedResident = state.residents.find(
         (item) => item.id === r.residentId,
@@ -540,7 +556,7 @@ export async function executeAction(
           structured: structuredDraft,
         });
       }
-      if (hasCare || profiles.length) {
+      if (updateFamilyReport && (hasCare || profiles.length)) {
         await upsertDailyFamilyReport({
           state,
           residentId: reviewedResident.id,
@@ -569,7 +585,63 @@ export async function executeAction(
       audit("Approved review and finalized selected information", r.id);
     } else audit("Saved review draft", r.id);
     r.revision++;
+    return r;
+  };
+  if (input.type === "review") {
+    const existing = getRecording(input.id);
+    if (existing.status === "completed" && input.approve)
+      return { id: existing.id };
+    const r = await applyReview(input, input.approve, true);
     return { id: r.id };
+  }
+  if (input.type === "review-day") {
+    if (!state.residents.some((resident) => resident.id === input.residentId))
+      throw new DomainError("Resident not found.", 404);
+    const expectedIds = new Set(
+      state.recordings
+        .filter(
+          (recording) =>
+            recording.status === "review" &&
+            recording.residentId === input.residentId &&
+            japanCalendarDate(recording.createdAt) === input.reportDate,
+        )
+        .map((recording) => recording.id),
+    );
+    const submittedIds = new Set(input.recordings.map((item) => item.id));
+    if (
+      expectedIds.size !== submittedIds.size ||
+      [...expectedIds].some((id) => !submittedIds.has(id))
+    )
+      throw new DomainError(
+        "The daily review changed. Reload before finalizing.",
+        409,
+      );
+    for (const submission of input.recordings) {
+      const r = validateReview(submission);
+      if (
+        r.residentId !== input.residentId ||
+        japanCalendarDate(r.createdAt) !== input.reportDate
+      )
+        throw new DomainError(
+          "The daily review contains another resident or date.",
+        );
+    }
+    for (const submission of input.recordings)
+      await applyReview(submission, true, false);
+    if (
+      dailyResidentInformation(state, input.residentId, input.reportDate).length
+    )
+      await upsertDailyFamilyReport({
+        state,
+        residentId: input.residentId,
+        reportDate: input.reportDate,
+        actor: session.userId,
+        now,
+        latestRecordingId: input.recordings.at(-1)?.id,
+      });
+    rebuildMemoryGraph(state);
+    audit("Approved resident daily review", input.residentId);
+    return { id: input.residentId };
   }
   if (
     input.type === "edit-information" ||

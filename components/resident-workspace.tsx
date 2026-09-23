@@ -1,12 +1,6 @@
 "use client";
 import type { Information, Resident, WorkspaceResponse } from "@/types";
-import {
-  ChevronRight,
-  FileText,
-  MessageCircle,
-  Send,
-  Smile,
-} from "lucide-react";
+import { ChevronRight, MessageCircle, Send, Smile } from "lucide-react";
 import Link from "next/link";
 import { KokologMark } from "./kokolog-mark";
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +8,7 @@ import { ja } from "@/lib/ja";
 import { moodTimeline } from "@/domain/mood";
 import { CareRecordView } from "./care-record-view";
 import { FamilyReports } from "./facility-views";
+import { DailyReview } from "./daily-review";
 import { Action, Avatar, Empty, formatDate, Status, time } from "./shared";
 export function ResidentWorkspace({
   resident: r,
@@ -21,14 +16,18 @@ export function ResidentWorkspace({
   inspect,
   action,
   activeTab,
+  reviewDate,
 }: {
   resident: Resident;
   data: WorkspaceResponse;
   inspect: (item: Information) => void;
   action: Action;
   activeTab: string;
+  reviewDate?: string;
 }) {
-  const tab = ["chat", "records", "profile", "family"].includes(activeTab)
+  const tab = ["chat", "review", "records", "profile", "family"].includes(
+    activeTab,
+  )
     ? activeTab
     : "chat";
   const [question, setQuestion] = useState("");
@@ -90,7 +89,7 @@ export function ResidentWorkspace({
     }
   };
   const pending = data.recordings.filter(
-    (x) => x.residentId === r.id && x.status !== "completed",
+    (x) => x.residentId === r.id && x.status === "review",
   );
   const records = data.records
     .filter((record) => record.residentId === r.id)
@@ -109,6 +108,7 @@ export function ResidentWorkspace({
       </div>
       <div className="tabs" role="tablist" aria-label="表示する情報">
         {[
+          ...(pending.length ? [["review", "1日分の確認"]] : []),
           ["chat", "この方について"],
           ["records", "介護記録"],
           ["profile", "プロフィール"],
@@ -122,7 +122,9 @@ export function ResidentWorkspace({
             href={
               value === "chat"
                 ? `/residents/${r.id}`
-                : `/residents/${r.id}/${value}`
+                : value === "review"
+                  ? `/residents/${r.id}/review/${reviewDate || new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" })}`
+                  : `/residents/${r.id}/${value}`
             }
           >
             {label}
@@ -133,32 +135,14 @@ export function ResidentWorkspace({
         className={`resident-thread-layout${tab === "chat" ? " chat-layout" : ""}`}
       >
         <section className="conversation-feed">
-          {tab === "records" &&
-            pending.map((recording) => (
-              <Link
-                className="pending-bubble"
-                href={`/processing/${recording.id}`}
-                key={recording.id}
-              >
-                <FileText size={20} />
-                <div>
-                  <strong>
-                    {formatDate(recording.createdAt)}{" "}
-                    {time(recording.createdAt)} の会話
-                  </strong>
-                  <p>
-                    {recording.status === "review"
-                      ? "内容を確認して記録を確定してください。"
-                      : "録音の内容を整理して、記録の下書きを作成します。"}
-                  </p>
-                </div>
-                <span>
-                  確認する
-                  <ChevronRight size={16} />
-                </span>
-              </Link>
-            ))}
-          {tab === "chat" ? (
+          {tab === "review" && reviewDate ? (
+            <DailyReview
+              resident={r}
+              reportDate={reviewDate}
+              data={data}
+              action={action}
+            />
+          ) : tab === "chat" ? (
             <section className="ai-memory-chat" aria-label="この方について">
               <div
                 className="chat-messages"

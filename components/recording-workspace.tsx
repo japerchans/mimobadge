@@ -123,7 +123,7 @@ export function RecordingWorkspace({
     <>
       <Link href="/" className="back-link">
         <ArrowLeft size={15} />
-        確認待ちに戻る
+        今日の確認に戻る
       </Link>
       <PageHeading
         title={

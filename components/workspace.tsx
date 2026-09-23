@@ -32,7 +32,7 @@ import { RecordingWorkspace } from "./recording-workspace";
 import { ResidentWorkspace } from "./resident-workspace";
 import { Avatar, CaregiverAvatar, Empty, Modal } from "./shared";
 export const nav = [
-  { href: "/", label: "会話を取り込む", icon: AudioLines },
+  { href: "/", label: "今日の確認", icon: AudioLines },
   { href: "/handoffs", label: "申し送り", icon: ArrowRightLeft },
 ];
 export function WorkspaceApp() {
@@ -124,20 +124,34 @@ export function WorkspaceApp() {
     const base = `/residents/${r.id}`;
     return decodedPathname === base || decodedPathname.startsWith(`${base}/`);
   });
-  const residentTab = resident
-    ? decodedPathname.slice(`/residents/${resident.id}`.length + 1) || "chat"
-    : "chat";
+  const residentPath = resident
+    ? decodedPathname.slice(`/residents/${resident.id}`.length + 1)
+    : "";
+  const [residentTab = "chat", reviewDate] = residentPath
+    ? residentPath.split("/")
+    : ["chat"];
   const recording = data.recordings.find(
     (r) => pathname === `/processing/${r.id}`,
   );
   const pending = data.recordings.filter((r) => r.status !== "completed");
+  const dailyReviewKeys = new Set(
+    pending
+      .filter((r) => r.status === "review" && r.residentId)
+      .map(
+        (r) =>
+          `${r.residentId}:${new Date(r.createdAt).toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" })}`,
+      ),
+  );
+  const pendingWorkCount =
+    dailyReviewKeys.size +
+    pending.filter((r) => r.status !== "review" || !r.residentId).length;
   const title =
     resident?.name ||
     (recording
-      ? "録音の確認"
+      ? "録音の詳細"
       : {
-          "/": "会話を取り込む",
-          "/dashboard": "会話を取り込む",
+          "/": "今日の確認",
+          "/dashboard": "今日の確認",
           "/processing": "録音履歴",
           "/records": "介護記録",
           "/handoffs": "申し送り",
@@ -194,8 +208,8 @@ export function WorkspaceApp() {
             >
               <n.icon size={18} />
               {n.label}
-              {n.href === "/" && pending.length > 0 && (
-                <b className="nav-count">{pending.length}</b>
+              {n.href === "/" && pendingWorkCount > 0 && (
+                <b className="nav-count">{pendingWorkCount}</b>
               )}
             </Link>
           ))}
@@ -230,7 +244,7 @@ export function WorkspaceApp() {
                     (recording) =>
                       recording.residentId === person.id &&
                       recording.status !== "completed",
-                  ) && <i className="unread" aria-label="確認待ちあり" />}
+                  ) && <i className="unread" aria-label="今日の確認あり" />}
                 </Link>
               ))}
           </nav>
@@ -276,6 +290,7 @@ export function WorkspaceApp() {
               inspect={setItem}
               action={action}
               activeTab={residentTab}
+              reviewDate={reviewDate}
             />
           ) : recording ? (
             <RecordingWorkspace
@@ -387,10 +402,6 @@ export function WorkspaceApp() {
           residents={data.residents}
           close={() => setImporting(false)}
           refresh={refresh}
-          openRecording={(id) => {
-            setImporting(false);
-            router.push(`/processing/${id}`);
-          }}
         />
       )}
       {addingResident && (

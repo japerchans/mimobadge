@@ -155,8 +155,12 @@ export function RecordingRow({
   data: WorkspaceResponse;
 }) {
   const person = data.residents.find((p) => p.id === r.residentId);
+  const target =
+    r.status === "review" && person
+      ? `/residents/${person.id}/review/${new Date(r.createdAt).toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" })}`
+      : `/processing/${r.id}`;
   return (
-    <Link href={`/processing/${r.id}`} className="recording-row">
+    <Link href={target} className="recording-row">
       {person ? (
         <Avatar resident={person} />
       ) : (

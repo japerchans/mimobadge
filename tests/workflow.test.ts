@@ -6,9 +6,10 @@ import {
   familyReportText,
   handoffText,
   expireTranscripts,
+  japanCalendarDate,
 } from "../domain/workflow";
 import { DemoMnemoNet, generateDraft } from "../domain/mnemonet";
-import type { Session } from "../types";
+import type { Recording, Session } from "../types";
 const session: Session = {
   facilityId: "sakura",
   userId: "aoki",
@@ -292,6 +293,56 @@ test("one daily family report combines every approved recording from that day", 
   );
   assert.match(reports[0].content, /午前は談話室/);
   assert.match(reports[0].content, /午後は娘様/);
+});
+test("a resident day is reviewed once and finalizes all of its recordings", async () => {
+  const state = seedWorkspace();
+  const recordings: Recording[] = [];
+  for (let index = 0; index < 2; index++) {
+    const { id } = await executeAction(
+      state,
+      { type: "transfer", residentId: "tanaka" },
+      session,
+    );
+    for (let stage = 0; stage < 5; stage++)
+      await executeAction(state, { type: "process", id }, session);
+    recordings.push(state.recordings.find((item) => item.id === id)!);
+  }
+  const reportDate = japanCalendarDate(recordings[0].createdAt);
+  await executeAction(
+    state,
+    {
+      type: "review-day",
+      residentId: "tanaka",
+      reportDate,
+      recordings: recordings.map((recording, index) => ({
+        id: recording.id,
+        revision: recording.revision,
+        proposals: recording.proposals,
+        draft: `${index === 0 ? "午前" : "午後"}の会話を記録した。`,
+        structuredDraft: recording.structuredDraft,
+      })),
+    },
+    session,
+  );
+  assert.ok(recordings.every((recording) => recording.status === "completed"));
+  assert.equal(
+    state.records.filter((record) =>
+      recordings.some((recording) => recording.id === record.recordingId),
+    ).length,
+    2,
+  );
+  const reports = state.handoffs.filter(
+    (item) =>
+      item.kind === "family" &&
+      item.residentId === "tanaka" &&
+      item.reportDate === reportDate,
+  );
+  assert.equal(reports.length, 1);
+  assert.ok(
+    state.audit.some(
+      (item) => item.action === "Approved resident daily review",
+    ),
+  );
 });
 test("unknown and unassigned residents cannot process; reassignment invalidates draft", async () => {
   const state = seedWorkspace();

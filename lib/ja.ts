@@ -24,6 +24,10 @@ const labels: Record<string, string> = {
   "Review items do not match.":
     "確認項目が更新されています。画面を再読み込みしてください。",
   "Review item not found.": "確認する項目が見つかりません。",
+  "The daily review changed. Reload before finalizing.":
+    "この日の記録が更新されています。画面を再読み込みしてください。",
+  "The daily review contains another resident or date.":
+    "別の入居者または日付の記録が含まれています。画面を再読み込みしてください。",
   "Select a resident first.": "入居者を選択してください。",
   "Information not found.": "情報が見つかりません。",
   Overview: "確認待ち",
