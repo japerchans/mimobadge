@@ -49,19 +49,19 @@ export class DemoSpeechToText implements SpeechToTextProvider {
       {
         speaker: "caregiver",
         start: 15,
-        end: 22,
-        text: "着替えを少し手伝いました。",
+        end: 27,
+        text: "体温36.5度、血圧128/72、脈拍68回、SpO2は97%。水分は200ml摂取、排尿あり。着替えを一部介助し、朝薬の服用を確認しました。",
       },
       {
         speaker: "resident",
-        start: 25,
-        end: 43,
+        start: 29,
+        end: 47,
         text: personal[resident.id] || "今日はいい天気ですね。",
       },
       {
         speaker: "caregiver",
-        start: 45,
-        end: 50,
+        start: 49,
+        end: 54,
         text: "今日はいい天気ですね。",
       },
     ];
@@ -80,9 +80,9 @@ export class DemoAudioPipeline
     return [
       { speaker: "caregiver", start: 0, end: 5 },
       { speaker: "resident", start: 6, end: 14 },
-      { speaker: "caregiver", start: 15, end: 22 },
-      { speaker: "resident", start: 25, end: 43 },
-      { speaker: "caregiver", start: 45, end: 50 },
+      { speaker: "caregiver", start: 15, end: 27 },
+      { speaker: "resident", start: 29, end: 47 },
+      { speaker: "caregiver", start: 49, end: 54 },
     ];
   }
 }

@@ -4,6 +4,7 @@ import {
   buildStructuredCareRecord,
   ensureStructuredCareRecords,
 } from "../domain/care-record";
+import { DemoMnemoNet } from "../domain/mnemonet";
 import { seedWorkspace } from "../db/seed";
 import type { Proposal, StructuredCareRecord } from "../types";
 
@@ -43,6 +44,15 @@ test("care records separate F-SOAIP facts and extract routine measurements", () 
   assert.equal(record.intervention.length, 1);
   assert.equal(record.plan.length, 1);
   assert.deepEqual(
+    record.entries?.map((item) => [item.category, item.field]),
+    [
+      ["Pain or discomfort", "subjective"],
+      ["Vitals", "objective"],
+      ["Assistance", "intervention"],
+      ["Observation", "plan"],
+    ],
+  );
+  assert.deepEqual(
     record.measurements.map((item) => item.value),
     ["128/76 mmHg", "36.7 ℃", "80 %"],
   );
@@ -56,4 +66,28 @@ test("legacy records gain a structured view from approved information", () => {
     StructuredCareRecord | undefined;
   assert.equal(structured?.format, "F-SOAIP");
   assert.ok(structured?.objective.length || structured?.subjective.length);
+});
+
+test("demo conversation fills routine care form fields without inventing values", async () => {
+  const extracted = await new DemoMnemoNet().extract(
+    [
+      {
+        speaker: "caregiver",
+        start: 0,
+        end: 12,
+        text: "体温36.5度、血圧128/72、脈拍68回、SpO2は97%。水分は200ml摂取、排尿あり。着替えを少し手伝い、朝薬の服用を確認しました。",
+      },
+    ],
+    [],
+  );
+  const record = buildStructuredCareRecord(extracted.proposals);
+  assert.deepEqual(
+    record.measurements.map((item) => item.kind),
+    ["blood-pressure", "temperature", "pulse", "spo2", "fluid", "elimination"],
+  );
+  assert.ok(record.intervention.includes("朝薬の服用を確認。"));
+  assert.equal(
+    record.measurements.some((item) => item.kind === "meal"),
+    false,
+  );
 });

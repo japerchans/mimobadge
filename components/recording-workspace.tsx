@@ -377,92 +377,103 @@ export function RecordingWorkspace({
                   </div>
                 </section>
                 <div className="extraction-column">
-                  <section className="panel">
-                    <div className="panel-header">
-                      <h2>記録に残す内容</h2>
-                      <span className="muted small">内容ごとに確認</span>
-                    </div>
-                    {(["care", "profile", "ignored"] as const).map((kind) => (
-                      <div className={`proposal-group ${kind}`} key={kind}>
-                        <div className="proposal-group-title">
-                          <span>
-                            {kind === "care" ? (
-                              <HeartHandshake size={16} />
-                            ) : kind === "profile" ? (
-                              <Leaf size={16} />
-                            ) : (
-                              <X size={16} />
-                            )}
-                            {kind === "care"
-                              ? "今日の介護記録"
-                              : kind === "profile"
-                                ? "プロフィール"
-                                : "記録しない会話"}
-                          </span>
-                          <small>
-                            {proposals.filter((p) => p.kind === kind).length} 件
-                          </small>
-                        </div>
-                        {proposals
-                          .filter((p) => p.kind === kind)
-                          .map((p) => (
-                            <div
-                              className={`proposal ${p.status === "rejected" ? "excluded" : ""}`}
-                              key={p.id}
-                            >
-                              <div className="row spread">
-                                <strong>{ja(p.category)}</strong>
-                                {kind !== "ignored" && (
-                                  <button
-                                    className="small-button"
-                                    onClick={() =>
+                  <details className="panel extraction-review">
+                    <summary className="panel-header">
+                      <div>
+                        <h2>抽出した内容を確認・修正</h2>
+                        <span className="muted small">
+                          必要な場合だけ開いて編集できます
+                        </span>
+                      </div>
+                      <span className="muted small">
+                        {proposals.filter((p) => p.kind !== "ignored").length}{" "}
+                        件
+                      </span>
+                    </summary>
+                    <div className="extraction-review-body">
+                      {(["care", "profile", "ignored"] as const).map((kind) => (
+                        <div className={`proposal-group ${kind}`} key={kind}>
+                          <div className="proposal-group-title">
+                            <span>
+                              {kind === "care" ? (
+                                <HeartHandshake size={16} />
+                              ) : kind === "profile" ? (
+                                <Leaf size={16} />
+                              ) : (
+                                <X size={16} />
+                              )}
+                              {kind === "care"
+                                ? "今日の介護記録"
+                                : kind === "profile"
+                                  ? "プロフィール"
+                                  : "記録しない会話"}
+                            </span>
+                            <small>
+                              {proposals.filter((p) => p.kind === kind).length}{" "}
+                              件
+                            </small>
+                          </div>
+                          {proposals
+                            .filter((p) => p.kind === kind)
+                            .map((p) => (
+                              <div
+                                className={`proposal ${p.status === "rejected" ? "excluded" : ""}`}
+                                key={p.id}
+                              >
+                                <div className="row spread">
+                                  <strong>{ja(p.category)}</strong>
+                                  {kind !== "ignored" && (
+                                    <button
+                                      className="small-button"
+                                      onClick={() =>
+                                        updateProposal(p.id, {
+                                          status:
+                                            p.status === "rejected"
+                                              ? "pending"
+                                              : "rejected",
+                                        })
+                                      }
+                                    >
+                                      {p.status === "rejected"
+                                        ? "記録に戻す"
+                                        : "記録から除外"}
+                                    </button>
+                                  )}
+                                </div>
+                                {kind === "ignored" ? (
+                                  <p>{ja(p.content)}</p>
+                                ) : (
+                                  <textarea
+                                    aria-label={`${ja(p.category)} の候補`}
+                                    value={ja(p.content)}
+                                    disabled={p.status === "rejected" || saving}
+                                    onChange={(e) =>
                                       updateProposal(p.id, {
-                                        status:
-                                          p.status === "rejected"
-                                            ? "pending"
-                                            : "rejected",
+                                        content: e.target.value,
+                                        status: "edited",
                                       })
                                     }
-                                  >
-                                    {p.status === "rejected"
-                                      ? "記録に戻す"
-                                      : "記録から除外"}
-                                  </button>
+                                    rows={2}
+                                  />
+                                )}
+                                <details>
+                                  <summary>根拠となる発言</summary>
+                                  <p lang="ja">
+                                    {p.evidence ||
+                                      "発言の保存期間が終了しました。"}
+                                  </p>
+                                </details>
+                                {p.status === "edited" && (
+                                  <span className="edited-label">
+                                    編集した内容です。確定前に確認してください。
+                                  </span>
                                 )}
                               </div>
-                              {kind === "ignored" ? (
-                                <p>{ja(p.content)}</p>
-                              ) : (
-                                <textarea
-                                  aria-label={`${ja(p.category)} の候補`}
-                                  value={ja(p.content)}
-                                  disabled={p.status === "rejected" || saving}
-                                  onChange={(e) =>
-                                    updateProposal(p.id, {
-                                      content: e.target.value,
-                                      status: "edited",
-                                    })
-                                  }
-                                  rows={2}
-                                />
-                              )}
-                              <details>
-                                <summary>根拠となる発言</summary>
-                                <p lang="ja">
-                                  {p.evidence ||
-                                    "発言の保存期間が終了しました。"}
-                                </p>
-                              </details>
-                              {p.status === "edited" && (
-                                <span className="edited-label">
-                                  編集した内容です。確定前に確認してください。
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    ))}
-                  </section>
+                            ))}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                   {r.context.length > 0 && (
                     <section className="context-callout">
                       <div className="row">
@@ -483,7 +494,9 @@ export function RecordingWorkspace({
                     <div className="panel-header">
                       <div>
                         <h2>介護記録の下書き</h2>
-                        <span className="muted small">F-SOAIP形式</span>
+                        <span className="muted small">
+                          会話から定型欄に整理
+                        </span>
                       </div>
                       <button
                         className="text-link"
@@ -495,7 +508,7 @@ export function RecordingWorkspace({
                     </div>
                     <div className="draft-body">
                       <CareRecordView record={structuredDraft} />
-                      <details className="record-summary" open>
+                      <details className="record-summary">
                         <summary>経過要約を確認・編集</summary>
                         <label className="sr-only" htmlFor="draft">
                           介護記録の下書き
@@ -568,7 +581,11 @@ export function RecordingWorkspace({
               <strong>{resident?.name}</strong>さん
             </p>
             <div className="confirmation-record" lang="ja">
-              {draft || "今日の介護記録は選択されていません。"}
+              <CareRecordView record={structuredDraft} />
+              <details className="record-summary">
+                <summary>経過要約</summary>
+                <p>{draft || "今日の介護記録は選択されていません。"}</p>
+              </details>
             </div>
             <p className="muted small">
               除外した内容は保存しません。会話の全文は削除されます。家族への自動送信は行いません。

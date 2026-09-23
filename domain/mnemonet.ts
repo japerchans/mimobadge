@@ -38,6 +38,34 @@ export class DemoMnemoNet implements MnemoNetProcessor {
         content: "朝の更衣を一部介助。",
       },
       {
+        match: /体温.*血圧.*(?:脈拍|脈).*SpO2/i,
+        kind: "care" as const,
+        category: "Vitals",
+        recordField: "objective" as const,
+        content: "体温36.5℃、血圧128/72mmHg、脈拍68回/分、SpO2 97%。",
+      },
+      {
+        match: /水分.*200\s*(?:ml|mL|ミリ)/,
+        kind: "care" as const,
+        category: "Hydration",
+        recordField: "objective" as const,
+        content: "水分200mL摂取。",
+      },
+      {
+        match: /排尿あり/,
+        kind: "care" as const,
+        category: "Elimination",
+        recordField: "objective" as const,
+        content: "排尿あり。異常の訴えなし。",
+      },
+      {
+        match: /朝薬.*服用.*確認/,
+        kind: "care" as const,
+        category: "Medication",
+        recordField: "intervention" as const,
+        content: "朝薬の服用を確認。",
+      },
+      {
         match: /小学校.*先生/,
         kind: "profile" as const,
         category: "Former occupation",
@@ -85,6 +113,7 @@ export class DemoMnemoNet implements MnemoNetProcessor {
             content: rule.content,
             evidence: segment.text,
             status: "pending",
+            recordField: "recordField" in rule ? rule.recordField : undefined,
           });
           relevant = true;
         }

@@ -100,9 +100,15 @@ export function buildStructuredCareRecord(
     measurements: extractCareMeasurements(
       care.map((proposal) => proposal.content).join("\n"),
     ),
+    entries: [],
   };
   for (const proposal of care) {
     const field = proposal.recordField || inferField(proposal);
+    record.entries?.push({
+      category: proposal.category,
+      field,
+      content: proposal.content,
+    });
     if (field === "focus") continue;
     record[field].push(proposal.content);
   }

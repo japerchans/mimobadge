@@ -46,6 +46,11 @@ export type CareMeasurement = {
   label: string;
   value: string;
 };
+export type CareRecordEntry = {
+  category: string;
+  field: CareRecordField;
+  content: string;
+};
 export type StructuredCareRecord = {
   format: "F-SOAIP";
   focus: string[];
@@ -55,6 +60,7 @@ export type StructuredCareRecord = {
   intervention: string[];
   plan: string[];
   measurements: CareMeasurement[];
+  entries?: CareRecordEntry[];
 };
 export type Recording = {
   id: string;
