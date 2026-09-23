@@ -91,7 +91,7 @@
 | P1       | Resident AI chat | Blue canvas, white AI bubbles, blue user bubbles; bottom composer | Distinguish speakers and keep the primary action available         | Desktop and narrow layout checks                                    |
 | P2       | App shell        | Supplied logo, blue navigation and coral AI avatar                | Carry the user's brand into the screen                             |
 
-Primary action: ask about the resident. Suggestions disappear after the first question. Standalone episode teaser and pending recording cards are removed from the chat; source records remain available through the existing record/profile tabs. Verify multiple turns, blank submission prevention, full-width layout and mobile overflow.
+Superseded on 2026-09-23: the resident chat was removed, and the resident page now opens on care records.
 
 ### AIチャットの実接続
 
@@ -102,7 +102,17 @@ Primary action: ask about the resident. Suggestions disappear after the first qu
 | P1       | Resident AI chat | ここログのコーラル部分をもとにしたAIマークを吹き出し外に置く | 会話相手として見え、白い吹き出し内の本文も読みやすい                   | `components/kokolog-mark.tsx` |
 | P2       | Resident AI chat | 吹き出し、入力欄、タブ境界に最小限の影を足す                 | 白いニューモーフィズムの軽さを保ちながら、薄く見える部分だけを補強する | `app/globals.css`             |
 
-回答は現在の画面内の会話履歴だけを10往復まで送り、送信失敗時は同じ質問を画面に残して再試行できるようにする。家族向け文面は下書きとして作成できるが、送信したとは表示しない。
+Superseded on 2026-09-23: the resident chat API and UI were removed.
+
+## 2026-09-23：入居者AIチャットの削除
+
+| Priority | Page               | Decision                                                         | Why                                                        | Evidence                                      |
+| -------- | ------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| P0       | `/residents/:id`   | 「この方について」タブとこころんAIチャットを削除し、介護記録を初期表示にする | 入居者ページで職員が確認する対象を記録・プロフィール・家族レポートに絞る | `components/resident-workspace.tsx`           |
+| P0       | Resident AI chat   | チャット専用APIとAIアイコン部品を削除する                       | 画面から呼ばれない接続先とブランド部品を残さない           | `app/api/chat/route.ts`、`components/kokolog-mark.tsx` |
+| P1       | Resident page CSS  | チャット専用の吹き出し、入力欄、提案ボタンのCSSを削除する       | 使わないレイアウトの影響をなくし、タブ画面を単純に保つ     | `app/globals.css`                             |
+
+入居者ページの主操作は、日別の介護記録を確認し、必要に応じてプロフィールまたは家族レポートへ切り替えること。出典録音は各日の「元の録音」に残す。AI質問欄、質問候補、チャット履歴、チャットAPIは削除する。確認では、`/residents/:id` が介護記録を表示し、削除したAIタブが画面に残っていないことを確認する。
 
 ## 2026-09-21：こころんの共有知識フロー
 
@@ -116,7 +126,7 @@ Primary action: ask about the resident. Suggestions disappear after the first qu
 | P1       | 共通ナビ           | 常設の入居者一覧を削除し、「入居者・メモリー」と家族レポートを主ナビに置く                 | 入居者一覧との重複を減らし、3者への成果物を明確にする           | `components/workspace.tsx`                                               |
 | P1       | 共通               | 製品名とAI名を「こころん」へ統一する                                                       | 新しい製品定義と画面上の名称の不一致をなくす                    | `components/brand-logo.tsx`、`app/layout.tsx`                            |
 
-各ページの主操作は、入口が「録音ファイルを取り込む」、録音確認が「確認して共有知識に反映」、入居者が「この方について聞く」、介護記録が「記録を開く」、申し送りが「申し送りを作成」、家族レポートが「家族へ共有」。デモ録音は設定へ移動した。音声全文、根拠発言、操作履歴は必要時に開く情報として維持し、介護・安全・出典確認に必要な情報は削除しない。
+各ページの主操作は、入口が「録音ファイルを取り込む」、録音確認が「確認して共有知識に反映」、入居者が「介護記録を確認する」、介護記録が「記録を開く」、申し送りが「申し送りを作成」、家族レポートが「家族へ共有」。デモ録音は設定へ移動した。音声全文、根拠発言、操作履歴は必要時に開く情報として維持し、介護・安全・出典確認に必要な情報は削除しない。
 
 検証では、デスクトップと390px幅で複数ファイルの追加、明示的な名乗りの自動判定、同姓・判定不能時の手動選択、進捗・失敗・再試行、確認後の3用途への反映、家族レポートの編集と共有を確認する。
 

@@ -127,9 +127,9 @@ export function WorkspaceApp() {
   const residentPath = resident
     ? decodedPathname.slice(`/residents/${resident.id}`.length + 1)
     : "";
-  const [residentTab = "chat", reviewDate] = residentPath
+  const [residentTab = "records", reviewDate] = residentPath
     ? residentPath.split("/")
-    : ["chat"];
+    : ["records"];
   const recording = data.recordings.find(
     (r) => pathname === `/processing/${r.id}`,
   );
