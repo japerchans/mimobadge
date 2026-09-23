@@ -3,13 +3,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  Activity,
   ArrowRight,
+  Bath,
+  BedDouble,
   Check,
   ClipboardCheck,
+  Droplets,
+  Footprints,
   Heart,
+  HeartPulse,
   MessageCircleMore,
+  Pill,
   ShieldCheck,
   Sparkles,
+  Thermometer,
+  Toilet,
   UserRound,
   Utensils,
 } from "lucide-react";
@@ -111,90 +120,195 @@ function Intro({ section }: { section: Section }) {
 
 function CareRecordScreen() {
   return (
-    <div className={styles.twoColumn}>
-      <section className={`${styles.panel} ${styles.transcriptPanel}`}>
-        <div className={styles.panelTitle}>
+    <section className={`${styles.panel} ${styles.careSheet}`}>
+      <div className={styles.sheetTopbar}>
+        <div className={styles.sheetTitle}>
           <span className={styles.iconBubbleBlue}>
-            <MessageCircleMore size={20} />
+            <ClipboardCheck size={20} />
           </span>
-          <div>
-            <small>今日 9:10の会話</small>
-            <h2>会話から必要な情報を抽出</h2>
-          </div>
-        </div>
-        <div className={styles.chatList}>
-          <div className={styles.staffMessage}>
-            <b>佐々木</b>
-            <p>朝ごはんはいかがでしたか？</p>
-          </div>
-          <div className={styles.residentMessage}>
-            <b>山本さん</b>
-            <p>全部食べました。立つ時に右の膝が少し痛みます。</p>
-          </div>
-          <div className={styles.staffMessage}>
-            <b>佐々木</b>
-            <p>右側で見守りますね。手すりを使ってゆっくり立ちましょう。</p>
-          </div>
-        </div>
-        <div className={styles.extractRow}>
-          <span>
-            <Utensils size={16} /> 朝食 100%
-          </span>
-          <span>
-            <ShieldCheck size={16} /> 右膝痛
-          </span>
-          <span>
-            <UserRound size={16} /> 見守り
-          </span>
-        </div>
-      </section>
-
-      <div className={styles.flowArrow} aria-hidden="true">
-        <Sparkles size={18} />
-        <ArrowRight size={22} />
-      </div>
-
-      <section className={`${styles.panel} ${styles.recordPanel}`}>
-        <div className={styles.recordHeading}>
           <div>
             <span className={styles.draftBadge}>AI下書き</span>
-            <h2>介護記録</h2>
+            <h2>日常介護記録</h2>
           </div>
-          <span className={styles.timestamp}>9月22日 09:18</span>
         </div>
-        <dl className={styles.recordGrid}>
-          <div>
-            <dt>食事</dt>
-            <dd>
-              <strong>朝食 100%</strong>
-              <small>主食・副食ともに完食</small>
-            </dd>
-          </div>
-          <div>
-            <dt>本人の言葉</dt>
-            <dd>「立つ時に右の膝が少し痛む」</dd>
-          </div>
-          <div>
-            <dt>行ったケア</dt>
-            <dd>
-              右側から見守り、手すりを案内。ゆっくり立ち上がるよう声かけ。
-            </dd>
-          </div>
-          <div>
-            <dt>次回の確認</dt>
-            <dd>立ち上がり時の右膝の痛みと歩行状態を確認する。</dd>
-          </div>
-        </dl>
-        <div className={styles.reviewBar}>
-          <ClipboardCheck size={19} />
-          <span>
-            <b>職員が確認して確定</b>
-            <small>内容は送信前に修正できます</small>
-          </span>
-          <Check size={18} />
+        <div className={styles.generatedFrom}>
+          <Sparkles size={15} />
+          9:10の会話から自動作成
         </div>
-      </section>
-    </div>
+      </div>
+
+      <div className={styles.identityGrid}>
+        <div>
+          <span>入居者</span>
+          <strong>山本 正一 様</strong>
+          <small>82歳・203号室</small>
+        </div>
+        <div>
+          <span>記録日時</span>
+          <strong>2026年9月22日　09:18</strong>
+          <small>朝食後ケア</small>
+        </div>
+        <div>
+          <span>担当職員</span>
+          <strong>佐々木 美咲</strong>
+          <small>介護職員</small>
+        </div>
+      </div>
+
+      <div className={styles.careFormGrid}>
+        <div className={styles.formMain}>
+          <section className={styles.formSection}>
+            <div className={styles.formSectionTitle}>
+              <HeartPulse size={17} />
+              <h3>バイタル・健康状態</h3>
+              <span>測定 08:45</span>
+            </div>
+            <div className={styles.vitalsGrid}>
+              <div>
+                <Thermometer size={17} />
+                <span>体温</span>
+                <strong>
+                  36.5<small>℃</small>
+                </strong>
+              </div>
+              <div>
+                <Activity size={17} />
+                <span>血圧</span>
+                <strong>
+                  128/72<small>mmHg</small>
+                </strong>
+              </div>
+              <div>
+                <Heart size={17} />
+                <span>脈拍</span>
+                <strong>
+                  68<small>回/分</small>
+                </strong>
+              </div>
+              <div>
+                <Droplets size={17} />
+                <span>SpO₂</span>
+                <strong>
+                  97<small>%</small>
+                </strong>
+              </div>
+            </div>
+            <div className={styles.conditionRow}>
+              <span>意識</span>
+              <b>清明</b>
+              <span>表情</span>
+              <b>穏やか</b>
+              <span>睡眠</span>
+              <b>良眠</b>
+              <span>疼痛</span>
+              <b className={styles.alertValue}>右膝・軽度</b>
+            </div>
+          </section>
+
+          <section className={styles.formSection}>
+            <div className={styles.formSectionTitle}>
+              <Utensils size={17} />
+              <h3>食事・水分</h3>
+            </div>
+            <div className={styles.mealGrid}>
+              <div>
+                <span>朝食</span>
+                <strong>主食 10/10</strong>
+                <strong>副食 10/10</strong>
+              </div>
+              <div>
+                <span>水分</span>
+                <strong>200 mL</strong>
+                <small>お茶</small>
+              </div>
+              <div>
+                <span>食欲</span>
+                <strong>良好</strong>
+                <small>むせ込みなし</small>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.formSection}>
+            <div className={styles.formSectionTitle}>
+              <MessageCircleMore size={17} />
+              <h3>状態・特記事項</h3>
+            </div>
+            <div className={styles.noteBox}>
+              朝食は主食・副食ともに完食。立ち上がり時に「右膝が少し痛む」との訴えあり。右側から見守り、手すりを使用してゆっくり立ち上がるよう声かけを行った。歩行は安定しているが、次回介助時も疼痛の有無を確認する。
+            </div>
+          </section>
+        </div>
+
+        <aside className={styles.careChecklist}>
+          <div className={styles.formSectionTitle}>
+            <UserRound size={17} />
+            <h3>実施したケア</h3>
+          </div>
+          <div className={styles.checkGroups}>
+            <div>
+              <span>
+                <Toilet size={16} />
+                排泄
+              </span>
+              <p>
+                <b>✓</b> トイレ誘導
+              </p>
+              <small>排尿あり・異常なし</small>
+            </div>
+            <div>
+              <span>
+                <Bath size={16} />
+                清潔・整容
+              </span>
+              <p>
+                <b>✓</b> 洗面・口腔ケア
+              </p>
+              <small>一部声かけ</small>
+            </div>
+            <div>
+              <span>
+                <Footprints size={16} />
+                移動
+              </span>
+              <p>
+                <b>✓</b> 立位・歩行見守り
+              </p>
+              <small>手すり使用</small>
+            </div>
+            <div>
+              <span>
+                <Pill size={16} />
+                服薬
+              </span>
+              <p>
+                <b>✓</b> 朝薬 服用確認
+              </p>
+              <small>飲み忘れなし</small>
+            </div>
+            <div>
+              <span>
+                <BedDouble size={16} />
+                環境
+              </span>
+              <p>
+                <b>✓</b> ベッド周辺整備
+              </p>
+              <small>ナースコール位置確認</small>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className={styles.sheetReview}>
+        <span>
+          <ShieldCheck size={17} /> AIが会話から抽出した箇所を青色で表示
+        </span>
+        <span className={styles.reviewStatus}>
+          <Check size={16} /> 職員が内容を確認して記録を確定
+        </span>
+      </div>
+    </section>
   );
 }
 

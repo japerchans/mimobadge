@@ -366,6 +366,263 @@
   font-size: 10px;
 }
 
+.careSheet {
+  overflow: hidden;
+  background: #fff;
+}
+.sheetTopbar,
+.sheetTitle,
+.generatedFrom,
+.formSectionTitle,
+.sheetReview,
+.sheetReview > span,
+.checkGroups span {
+  display: flex;
+  align-items: center;
+}
+.sheetTopbar {
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid #dce5f0;
+  background: linear-gradient(90deg, #f8fbff 0%, #fff 62%);
+}
+.sheetTitle {
+  gap: 12px;
+}
+.sheetTitle > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sheetTitle h2 {
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+.generatedFrom {
+  gap: 7px;
+  color: #3d65a2;
+  background: #edf4ff;
+  border: 1px solid #d7e6ff;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.identityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  border-bottom: 1px solid #dce5f0;
+}
+.identityGrid > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 1px;
+  padding: 9px 20px;
+}
+.identityGrid > div + div {
+  border-left: 1px solid #e2e9f2;
+}
+.identityGrid span {
+  grid-row: 1 / 3;
+  align-self: center;
+  color: #65758b;
+  font-size: 10px;
+  font-weight: 700;
+}
+.identityGrid strong {
+  color: #202d43;
+  font-size: 14px;
+}
+.identityGrid small {
+  color: #8290a2;
+  font-size: 10px;
+}
+.careFormGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+.formMain {
+  min-width: 0;
+}
+.formSection {
+  padding: 11px 20px;
+  border-bottom: 1px solid #e2e9f2;
+}
+.formMain .formSection:last-child {
+  border-bottom: 0;
+}
+.formSectionTitle {
+  gap: 8px;
+  color: #2c68bd;
+  margin-bottom: 10px;
+}
+.formSectionTitle h3 {
+  color: #26364e;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.formSectionTitle > span {
+  margin-left: auto;
+  color: #8491a3;
+  font-size: 9px;
+  font-weight: 700;
+}
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.vitalsGrid > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 7px;
+  padding: 9px 11px;
+  border: 1px solid #e2eaf4;
+  border-radius: 10px;
+  background: #fbfdff;
+  color: #4776b8;
+}
+.vitalsGrid span {
+  color: #76869b;
+  font-size: 9px;
+  font-weight: 700;
+}
+.vitalsGrid strong {
+  grid-column: 1 / -1;
+  color: #1e2e45;
+  font-size: 17px;
+  line-height: 1.1;
+}
+.vitalsGrid strong small {
+  margin-left: 3px;
+  color: #718198;
+  font-size: 8px;
+  font-weight: 700;
+}
+.conditionRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: #f5f8fc;
+  font-size: 9px;
+}
+.conditionRow span {
+  color: #78879a;
+}
+.conditionRow b {
+  color: #34445c;
+}
+.conditionRow .alertValue {
+  color: #bd5056;
+}
+.mealGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr;
+  border: 1px solid #e2e9f2;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mealGrid > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1px 12px;
+  min-height: 48px;
+  padding: 7px 12px;
+}
+.mealGrid > div + div {
+  border-left: 1px solid #e2e9f2;
+}
+.mealGrid span {
+  grid-row: 1 / 3;
+  color: #718197;
+  font-size: 9px;
+  font-weight: 700;
+}
+.mealGrid strong {
+  color: #27374e;
+  font-size: 11px;
+}
+.mealGrid small {
+  color: #7c899a;
+  font-size: 9px;
+}
+.noteBox {
+  color: #33435a;
+  border: 1px solid #dce6f2;
+  border-left: 3px solid var(--demo-blue);
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+.careChecklist {
+  padding: 11px 18px;
+  border-left: 1px solid #dce5f0;
+  background: #fafbfd;
+}
+.checkGroups {
+  display: grid;
+}
+.checkGroups > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid #e4eaf2;
+}
+.checkGroups span {
+  grid-column: 1 / -1;
+  gap: 6px;
+  color: #66778d;
+  font-size: 9px;
+  font-weight: 700;
+}
+.checkGroups p {
+  color: #2e3f56;
+  font-size: 10px;
+  font-weight: 700;
+}
+.checkGroups p b {
+  color: #28766c;
+}
+.checkGroups small {
+  align-self: center;
+  color: #8490a0;
+  font-size: 8px;
+}
+.sheetReview {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 20px;
+  border-top: 1px solid #dce5f0;
+  background: #f7f9fc;
+  color: #63748a;
+  font-size: 9px;
+  font-weight: 700;
+}
+.sheetReview > span {
+  gap: 6px;
+}
+.sheetReview > span:first-child svg {
+  color: var(--demo-blue);
+}
+.reviewStatus {
+  color: #27675f;
+  background: #e7f5f1;
+  border-radius: 999px;
+  padding: 7px 11px;
+}
+
 .contextGraphPanel {
   width: min(100%, 960px);
   aspect-ratio: 16 / 9;
@@ -542,6 +799,17 @@
   .flowArrow {
     transform: rotate(90deg);
   }
+  .careFormGrid {
+    grid-template-columns: 1fr;
+  }
+  .careChecklist {
+    border-left: 0;
+    border-top: 1px solid #dce5f0;
+  }
+  .checkGroups {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 18px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -579,5 +847,24 @@
   .daySummary,
   .letterCard {
     padding: 19px;
+  }
+  .sheetTopbar,
+  .sheetReview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .identityGrid,
+  .vitalsGrid,
+  .mealGrid,
+  .checkGroups {
+    grid-template-columns: 1fr;
+  }
+  .identityGrid > div + div,
+  .mealGrid > div + div {
+    border-left: 0;
+    border-top: 1px solid #e2e9f2;
+  }
+  .conditionRow {
+    grid-template-columns: auto 1fr auto 1fr;
   }
 }
