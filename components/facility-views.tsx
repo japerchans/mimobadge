@@ -379,7 +379,9 @@ export function FamilyReports({
         item.kind === "family" &&
         (!fixedResidentId || item.residentId === fixedResidentId),
     )
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) =>
+      (b.reportDate || b.createdAt).localeCompare(a.reportDate || a.createdAt),
+    );
   const [residentId, setResidentId] = useState(fixedResidentId || "");
   const [editingId, setEditingId] = useState("");
   const [content, setContent] = useState("");
@@ -409,7 +411,7 @@ export function FamilyReports({
         try {
           await action(
             { type: "create-family-report", residentId },
-            "家族レポートの下書きを作成しました",
+            "今日の家族レポートを作成・更新しました",
           );
           if (!fixedResidentId) setResidentId("");
         } catch (caught) {
@@ -420,7 +422,7 @@ export function FamilyReports({
       }}
     >
       <Heart size={16} />
-      {busy ? "作成中…" : "新しい下書きを作る"}
+      {busy ? "更新中…" : "今日のレポートを作成・更新"}
     </button>
   );
   return (
@@ -430,7 +432,7 @@ export function FamilyReports({
           <div>
             <h2>家族レポート</h2>
             <p className="muted">
-              確認済みの会話から下書きを作り、内容を確認して共有します。
+              その日の確認済み会話をすべてまとめた下書きです。
             </p>
           </div>
           {createButton}
@@ -438,7 +440,7 @@ export function FamilyReports({
       ) : (
         <PageHeading
           title="家族レポート"
-          description="確認済みの会話から近況の下書きを作り、職員が確認して家族へ共有します。"
+          description="入居者ごとに、その日の確認済み会話をひとつのレポートへまとめます。"
         >
           <select
             aria-label="レポートを作る入居者"
@@ -472,14 +474,31 @@ export function FamilyReports({
               (candidate) => candidate.id === report.residentId,
             );
             const editing = editingId === report.id;
+            const reportDate = report.reportDate
+              ? report.reportDate
+                  .split("-")
+                  .map(Number)
+                  .reduce(
+                    (label, part, index) =>
+                      `${label}${part}${["年", "月", "日"][index]}`,
+                    "",
+                  )
+              : formatDate(report.createdAt);
+            const recordingCount =
+              report.recordingIds?.length || (report.recordingId ? 1 : 0);
             return (
               <section className="panel family-report" key={report.id}>
                 <div className="panel-header">
                   <div>
-                    <h2>{resident?.name || "入居者"}さんの近況</h2>
+                    <h2>{resident?.name || "入居者"}さんの1日</h2>
                     <span className="muted small">
-                      {formatDate(report.createdAt)} {time(report.createdAt)} ·
-                      下書き
+                      {reportDate}
+                      {recordingCount
+                        ? ` · ${recordingCount}件の録音を反映`
+                        : ""}
+                      {report.updatedAt
+                        ? ` · ${time(report.updatedAt)}更新`
+                        : ""}
                     </span>
                   </div>
                   <span className="status pending">
@@ -565,7 +584,7 @@ export function FamilyReports({
         </div>
       ) : (
         <Empty>
-          家族レポートはまだありません。確認済みの会話から下書きを作れます。
+          家族レポートはまだありません。今日の確認済み会話をまとめて下書きを作れます。
         </Empty>
       )}
     </>

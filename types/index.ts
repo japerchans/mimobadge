@@ -120,6 +120,8 @@ export type Handoff = {
   kind?: "handoff" | "family";
   residentId?: string;
   recordingId?: string;
+  recordingIds?: string[];
+  reportDate?: string;
   updatedAt?: string;
 };
 export type MemoryNodeType = "person" | "place" | "event" | "time";

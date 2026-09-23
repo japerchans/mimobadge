@@ -224,6 +224,20 @@ test("family reports use approved resident knowledge and remain editable", async
   const report = state.handoffs.find((item) => item.id === created.id)!;
   assert.equal(report.kind, "family");
   assert.equal(report.residentId, "tanaka");
+  assert.equal(report.recordingIds?.length, 1);
+  assert.ok(report.reportDate);
+  const refreshed = await executeAction(
+    state,
+    { type: "create-family-report", residentId: "tanaka" },
+    session,
+  );
+  assert.equal(refreshed.id, report.id);
+  assert.equal(
+    state.handoffs.filter(
+      (item) => item.kind === "family" && item.residentId === "tanaka",
+    ).length,
+    1,
+  );
   await executeAction(
     state,
     {
@@ -237,6 +251,47 @@ test("family reports use approved resident knowledge and remain editable", async
   assert.ok(
     state.audit.some((item) => item.action === "Updated family report"),
   );
+});
+test("one daily family report combines every approved recording from that day", async () => {
+  const state = seedWorkspace();
+  const approvedRecordingIds: string[] = [];
+  for (const draft of [
+    "午前は談話室で笑顔で過ごされた。",
+    "午後は娘様の写真を見ながら会話された。",
+  ]) {
+    const { id } = await executeAction(
+      state,
+      { type: "transfer", residentId: "tanaka" },
+      session,
+    );
+    for (let i = 0; i < 5; i++)
+      await executeAction(state, { type: "process", id }, session);
+    const recording = state.recordings.find((item) => item.id === id)!;
+    await executeAction(
+      state,
+      {
+        type: "review",
+        id,
+        revision: recording.revision,
+        proposals: recording.proposals,
+        draft,
+        structuredDraft: recording.structuredDraft,
+        approve: true,
+      },
+      session,
+    );
+    approvedRecordingIds.push(id);
+  }
+  const reports = state.handoffs.filter(
+    (item) => item.kind === "family" && item.residentId === "tanaka",
+  );
+  assert.equal(reports.length, 1);
+  assert.deepEqual(
+    new Set(reports[0].recordingIds),
+    new Set(["history-tanaka-0", ...approvedRecordingIds]),
+  );
+  assert.match(reports[0].content, /午前は談話室/);
+  assert.match(reports[0].content, /午後は娘様/);
 });
 test("unknown and unassigned residents cannot process; reassignment invalidates draft", async () => {
   const state = seedWorkspace();

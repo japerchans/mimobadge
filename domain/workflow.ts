@@ -156,33 +156,65 @@ export function handoffText(state: Workspace) {
     .join("\n\n");
 }
 
-export function familyReportText(state: Workspace, residentId: string) {
+export function japanCalendarDate(iso: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(iso));
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value || "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+export function dailyResidentInformation(
+  state: Workspace,
+  residentId: string,
+  reportDate: string,
+) {
+  const recordingIds = new Set(
+    state.recordings
+      .filter(
+        (recording) =>
+          recording.residentId === residentId &&
+          japanCalendarDate(recording.createdAt) === reportDate,
+      )
+      .map((recording) => recording.id),
+  );
+  return state.information
+    .filter(
+      (item) =>
+        item.residentId === residentId && recordingIds.has(item.recordingId),
+    )
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function familyReportText(
+  state: Workspace,
+  residentId: string,
+  reportDate = japanCalendarDate(new Date().toISOString()),
+) {
   const resident = state.residents.find((item) => item.id === residentId);
   if (!resident) throw new DomainError("Resident not found.", 404);
-  const information = state.information
-    .filter((item) => item.residentId === residentId)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const uniqueByContent = (items: typeof information, limit: number) =>
-    items
-      .filter(
-        (item, index, all) =>
-          all.findIndex((candidate) => candidate.content === item.content) ===
-          index,
-      )
-      .slice(0, limit);
+  const information = dailyResidentInformation(state, residentId, reportDate);
+  const uniqueByContent = (items: typeof information) =>
+    items.filter(
+      (item, index, all) =>
+        all.findIndex((candidate) => candidate.content === item.content) ===
+        index,
+    );
   const recentCare = uniqueByContent(
     information.filter((item) => item.kind === "care"),
-    3,
   );
   const profile = uniqueByContent(
     information.filter((item) => item.kind === "profile"),
-    2,
   );
   if (!recentCare.length && !profile.length)
     throw new DomainError("No approved information for this resident.");
   const paragraphs = [
     "ご家族様へ",
-    `${resident.name}さんの最近のご様子をお知らせします。`,
+    `${resident.name}さんの${reportDate.replaceAll("-", "年").replace(/年(\d{2})$/, "月$1日")}のご様子をお知らせします。`,
   ];
   if (recentCare.length)
     paragraphs.push(recentCare.map((item) => `・${item.content}`).join("\n"));
@@ -194,6 +226,73 @@ export function familyReportText(state: Workspace, residentId: string) {
     "この文面は確認済みの記録から作成した下書きです。送信前に職員が内容を確認してください。",
   );
   return paragraphs.join("\n\n");
+}
+
+async function upsertDailyFamilyReport({
+  state,
+  residentId,
+  reportDate,
+  actor,
+  now,
+  latestRecordingId,
+}: {
+  state: Workspace;
+  residentId: string;
+  reportDate: string;
+  actor: string;
+  now: string;
+  latestRecordingId?: string;
+}) {
+  const resident = state.residents.find((item) => item.id === residentId);
+  if (!resident) throw new DomainError("Resident not found.", 404);
+  const information = dailyResidentInformation(state, residentId, reportDate);
+  const fallback = familyReportText(state, residentId, reportDate);
+  const recordingIds = [
+    ...new Set(information.map((item) => item.recordingId)),
+  ];
+  const matches = state.handoffs.filter(
+    (item) =>
+      item.kind === "family" &&
+      item.residentId === residentId &&
+      (item.reportDate || japanCalendarDate(item.createdAt)) === reportDate,
+  );
+  const report = matches.sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  )[0];
+  const content = await generateFamilyReportWithAI({
+    key: process.env.OPENAI_API_KEY,
+    resident,
+    information,
+    reportDate,
+    fallback,
+  });
+  if (report) {
+    report.content = content;
+    report.updatedAt = now;
+    report.createdBy = actor;
+    report.reportDate = reportDate;
+    report.recordingIds = recordingIds;
+    report.recordingId = latestRecordingId || recordingIds.at(-1);
+    const duplicateIds = new Set(matches.slice(1).map((item) => item.id));
+    state.handoffs = state.handoffs.filter(
+      (item) => !duplicateIds.has(item.id),
+    );
+    return report;
+  }
+  const created = {
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+    createdBy: actor,
+    content,
+    kind: "family" as const,
+    residentId,
+    recordingId: latestRecordingId || recordingIds.at(-1),
+    recordingIds,
+    reportDate,
+  };
+  state.handoffs.unshift(created);
+  return created;
 }
 export async function executeAction(
   state: Workspace,
@@ -442,21 +541,13 @@ export async function executeAction(
         });
       }
       if (hasCare || profiles.length) {
-        const reportContent = await generateFamilyReportWithAI({
-          key: process.env.OPENAI_API_KEY,
-          resident: reviewedResident,
-          information: state.information,
-          fallback: familyReportText(state, reviewedResident.id),
-        });
-        state.handoffs.unshift({
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-          createdBy: session.userId,
-          content: reportContent,
-          kind: "family",
+        await upsertDailyFamilyReport({
+          state,
           residentId: reviewedResident.id,
-          recordingId: r.id,
+          reportDate: japanCalendarDate(r.createdAt),
+          actor: session.userId,
+          now,
+          latestRecordingId: r.id,
         });
       }
       rebuildMemoryGraph(state);
@@ -511,27 +602,14 @@ export async function executeAction(
     return { id: input.id };
   }
   if (input.type === "create-family-report") {
-    const resident = state.residents.find(
-      (item) => item.id === input.residentId,
-    );
-    if (!resident) throw new DomainError("Resident not found.", 404);
-    const fallback = familyReportText(state, input.residentId);
-    const report = {
-      id: crypto.randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-      createdBy: session.userId,
-      content: await generateFamilyReportWithAI({
-        key: process.env.OPENAI_API_KEY,
-        resident,
-        information: state.information,
-        fallback,
-      }),
-      kind: "family" as const,
+    const report = await upsertDailyFamilyReport({
+      state,
       residentId: input.residentId,
-    };
-    state.handoffs.unshift(report);
-    audit("Created family report", report.id);
+      reportDate: japanCalendarDate(now),
+      actor: session.userId,
+      now,
+    });
+    audit("Created or updated daily family report", report.id);
     return { id: report.id };
   }
   if (input.type === "save-family-report") {
