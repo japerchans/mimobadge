@@ -1,5 +1,6 @@
 import type { Workspace, Information, Recording } from "@/types";
 import { buildMemoryGraph } from "@/domain/memory-graph";
+import { ensureDemoProfiles } from "./demo-profiles";
 const date = (days: number, hour = 9) => {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -182,7 +183,7 @@ export function seedWorkspace(): Workspace {
       revision: 0,
     });
   const graph = buildMemoryGraph(information);
-  return {
+  return ensureDemoProfiles({
     facility: { id: "sakura", name: "Sakura Care Home" },
     residents,
     caregivers: [
@@ -214,5 +215,5 @@ export function seedWorkspace(): Workspace {
     audit: [],
     handoffs: [],
     ...graph,
-  };
+  });
 }

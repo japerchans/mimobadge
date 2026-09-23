@@ -16,7 +16,7 @@ async function action(input) {
   return result;
 }
 const initial = await state();
-assert.equal(initial.residents.length, 5);
+assert.equal(initial.residents.length, 6);
 const { id } = await action({ type: "transfer", residentId: "tanaka" });
 for (let i = 0; i < 5; i++) await action({ type: "process", id });
 const review = (await state()).recordings.find((r) => r.id === id);

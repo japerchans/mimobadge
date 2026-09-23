@@ -5,6 +5,7 @@ import { seedWorkspace } from "./seed";
 import type { Workspace } from "@/types";
 import { ensureMemoryGraph } from "@/domain/memory-graph";
 import { ensureStructuredCareRecords } from "@/domain/care-record";
+import { ensureDemoProfiles } from "./demo-profiles";
 const tables = {
   caregivers: "caregivers",
   residents: "residents",
@@ -48,7 +49,9 @@ async function loadPostgres(
       (r) => r.data,
     );
   }
-  return ensureStructuredCareRecords(ensureMemoryGraph(state));
+  return ensureDemoProfiles(
+    ensureStructuredCareRecords(ensureMemoryGraph(state)),
+  );
 }
 export async function savePostgres(client: PoolClient, state: Workspace) {
   for (const [key, table] of Object.entries(tables)) {
@@ -116,8 +119,10 @@ async function localTransaction<T>(
   await mkdir(dir, { recursive: true, mode: 0o700 });
   let state: Workspace;
   try {
-    state = ensureStructuredCareRecords(
-      ensureMemoryGraph(JSON.parse(await readFile(file, "utf8"))),
+    state = ensureDemoProfiles(
+      ensureStructuredCareRecords(
+        ensureMemoryGraph(JSON.parse(await readFile(file, "utf8"))),
+      ),
     );
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;

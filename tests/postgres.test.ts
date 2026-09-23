@@ -16,7 +16,7 @@ test("PostgreSQL schema persists approval atomically, enforces facility foreign 
     );
     const state = seedWorkspace();
     await savePostgres(db as unknown as PoolClient, state);
-    assert.equal((await db.query("SELECT * FROM residents")).rows.length, 5);
+    assert.equal((await db.query("SELECT * FROM residents")).rows.length, 6);
     assert.ok((await db.query("SELECT * FROM memory_nodes")).rows.length > 0);
     assert.ok((await db.query("SELECT * FROM memory_edges")).rows.length > 0);
     const session = {
