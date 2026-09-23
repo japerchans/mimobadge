@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { CareRecordView } from "./care-record-view";
+import { groupDailyCareRecords } from "./daily-care-records";
 import {
   Action,
   Avatar,
@@ -157,6 +158,11 @@ export function Residents({
 }
 export function Records({ data }: { data: WorkspaceResponse }) {
   const [residentId, setResidentId] = useState("");
+  const dailyRecords = groupDailyCareRecords(
+    data.records.filter(
+      (record) => !residentId || record.residentId === residentId,
+    ),
+  );
   return (
     <>
       <PageHeading
@@ -179,53 +185,51 @@ export function Records({ data }: { data: WorkspaceResponse }) {
         <span className="muted small">確定時点の内容を保存しています。</span>
       </div>
       <div className="records-list">
-        {data.records
-          .filter((r) => !residentId || r.residentId === residentId)
-          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-          .map((record) => {
-            const r = data.residents.find((r) => r.id === record.residentId)!;
-            return (
-              <section className="panel" key={record.id}>
-                <div className="panel-header">
-                  <Link className="row" href={`/residents/${r.id}`}>
-                    <Avatar resident={r} />
-                    <h3>{r.name}</h3>
-                  </Link>
+        {dailyRecords.map((day) => {
+          const r = data.residents.find((r) => r.id === day.residentId)!;
+          return (
+            <section className="panel" key={day.id}>
+              <div className="panel-header">
+                <Link className="row" href={`/residents/${r.id}`}>
+                  <Avatar resident={r} />
+                  <h3>{r.name}</h3>
+                </Link>
+                <span className="muted small">
+                  {formatDate(day.createdAt)} · {day.records.length}
+                  件の録音を反映
+                </span>
+              </div>
+              <div className="record-content">
+                <CareRecordView record={day.structured} empty={day.content} />
+                {day.structured && (
+                  <details className="record-summary">
+                    <summary>経過要約</summary>
+                    <p>{day.content}</p>
+                  </details>
+                )}
+                <div className="row spread">
                   <span className="muted small">
-                    {formatDate(record.createdAt)} · {time(record.createdAt)}
+                    確認した職員：{" "}
+                    {data.caregivers.find((c) => c.id === day.approvedBy)
+                      ?.name}
                   </span>
+                  <details className="source-recordings">
+                    <summary>元の録音 {day.records.length}件</summary>
+                    {day.records.map((record) => (
+                      <Link
+                        key={record.id}
+                        href={`/processing/${record.recordingId}`}
+                      >
+                        {time(record.createdAt)}
+                        <ArrowUpRight size={13} />
+                      </Link>
+                    ))}
+                  </details>
                 </div>
-                <div className="record-content">
-                  <CareRecordView
-                    record={record.structured}
-                    empty={record.content}
-                  />
-                  {record.structured && (
-                    <details className="record-summary">
-                      <summary>経過要約</summary>
-                      <p>{record.content}</p>
-                    </details>
-                  )}
-                  <div className="row spread">
-                    <span className="muted small">
-                      確認した職員：{" "}
-                      {
-                        data.caregivers.find((c) => c.id === record.approvedBy)
-                          ?.name
-                      }
-                    </span>
-                    <Link
-                      className="text-link"
-                      href={`/processing/${record.recordingId}`}
-                    >
-                      元の記録を見る
-                      <ArrowUpRight size={14} />
-                    </Link>
-                  </div>
-                </div>
-              </section>
-            );
-          })}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </>
   );
@@ -373,12 +377,27 @@ export function FamilyReports({
   residentId?: string;
   embedded?: boolean;
 }) {
-  const reports = data.handoffs
-    .filter(
-      (item) =>
-        item.kind === "family" &&
-        (!fixedResidentId || item.residentId === fixedResidentId),
-    )
+  const reports = [
+    ...data.handoffs
+      .filter(
+        (item) =>
+          item.kind === "family" &&
+          (!fixedResidentId || item.residentId === fixedResidentId),
+      )
+      .reduce((groups, report) => {
+        const date = report.reportDate || report.createdAt.slice(0, 10);
+        const key = `${report.residentId}:${date}`;
+        const current = groups.get(key);
+        if (
+          !current ||
+          (report.updatedAt || report.createdAt) >
+            (current.updatedAt || current.createdAt)
+        )
+          groups.set(key, report);
+        return groups;
+      }, new Map<string, (typeof data.handoffs)[number]>())
+      .values(),
+  ]
     .sort((a, b) =>
       (b.reportDate || b.createdAt).localeCompare(a.reportDate || a.createdAt),
     );

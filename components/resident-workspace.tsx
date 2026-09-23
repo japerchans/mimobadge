@@ -9,6 +9,7 @@ import { moodTimeline } from "@/domain/mood";
 import { CareRecordView } from "./care-record-view";
 import { FamilyReports } from "./facility-views";
 import { DailyReview } from "./daily-review";
+import { groupDailyCareRecords } from "./daily-care-records";
 import { Action, Avatar, Empty, formatDate, Status, time } from "./shared";
 export function ResidentWorkspace({
   resident: r,
@@ -91,7 +92,7 @@ export function ResidentWorkspace({
   const pending = data.recordings.filter(
     (x) => x.residentId === r.id && x.status === "review",
   );
-  const records = data.records
+  const records = groupDailyCareRecords(data.records)
     .filter((record) => record.residentId === r.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
@@ -297,15 +298,15 @@ export function ResidentWorkspace({
               embedded
             />
           ) : (
-            records.map((record) => (
-              <article className="panel resident-record" key={record.id}>
+            records.map((day) => (
+              <article className="panel resident-record" key={day.id}>
                 <div className="panel-header">
                   <div>
-                    <h2>{formatDate(record.createdAt)}</h2>
+                    <h2>{formatDate(day.createdAt)}</h2>
                     <span className="muted small">
-                      {time(record.createdAt)} · 確認した職員：
+                      {day.records.length}件の録音を反映 · 確認した職員：
                       {data.caregivers.find(
-                        (caregiver) => caregiver.id === record.approvedBy,
+                        (caregiver) => caregiver.id === day.approvedBy,
                       )?.name || "職員"}
                     </span>
                   </div>
@@ -313,22 +314,27 @@ export function ResidentWorkspace({
                 </div>
                 <div className="record-content">
                   <CareRecordView
-                    record={record.structured}
-                    empty={record.content}
+                    record={day.structured}
+                    empty={day.content}
                   />
-                  {record.structured && (
+                  {day.structured && (
                     <details className="record-summary">
                       <summary>経過要約</summary>
-                      <p>{record.content}</p>
+                      <p>{day.content}</p>
                     </details>
                   )}
-                  <Link
-                    href={`/processing/${record.recordingId}`}
-                    className="text-link"
-                  >
-                    元の記録を開く
-                    <ChevronRight size={14} />
-                  </Link>
+                  <details className="source-recordings">
+                    <summary>元の録音 {day.records.length}件</summary>
+                    {day.records.map((record) => (
+                      <Link
+                        key={record.id}
+                        href={`/processing/${record.recordingId}`}
+                      >
+                        {time(record.createdAt)}
+                        <ChevronRight size={13} />
+                      </Link>
+                    ))}
+                  </details>
                 </div>
               </article>
             ))

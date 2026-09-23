@@ -1199,6 +1199,34 @@ button.text-link {
   flex-direction: column;
   gap: 20px;
 }
+
+.source-recordings {
+  position: relative;
+  text-align: right;
+}
+
+.source-recordings summary {
+  color: #285bb1;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  list-style: none;
+}
+
+.source-recordings summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-recordings a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: #425868;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .record-content {
   padding: 22px;
 }
