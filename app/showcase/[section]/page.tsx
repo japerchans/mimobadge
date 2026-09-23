@@ -7,19 +7,26 @@ import {
   ArrowRight,
   Bath,
   BedDouble,
+  BriefcaseBusiness,
   Check,
   ClipboardCheck,
+  Coffee,
   Droplets,
+  Fish,
   Footprints,
   Heart,
   HeartPulse,
+  MapPin,
   MessageCircleMore,
+  Newspaper,
   Pill,
   ShieldCheck,
   Sparkles,
   Thermometer,
   Toilet,
+  TriangleAlert,
   UserRound,
+  UsersRound,
   Utensils,
 } from "lucide-react";
 import styles from "../showcase.module.css";
@@ -314,15 +321,158 @@ function CareRecordScreen() {
 
 function ProfileScreen() {
   return (
-    <section className={`${styles.panel} ${styles.contextGraphPanel}`}>
-      <Image
-        src="/showcase-context-graph.png"
-        alt="山本さんの人・場所・時期・趣味・出来事・ケア上の注意を関連付けた文脈グラフ"
-        width={1672}
-        height={941}
-        priority
-        className={styles.contextGraphImage}
-      />
+    <section className={`${styles.panel} ${styles.lifeProfile}`}>
+      <header className={styles.profileHeader}>
+        <Image
+          src="/avatars/yamamoto.png"
+          alt="山本正一さん"
+          width={92}
+          height={92}
+          priority
+        />
+        <div className={styles.profileIdentity}>
+          <span>生活歴プロフィール</span>
+          <h2>山本 正一さん</h2>
+          <p>やまもと しょういち　82歳　203号室</p>
+        </div>
+        <div className={styles.profileUpdated}>
+          <Sparkles size={15} />
+          <span>
+            会話を重ねて更新
+            <small>最終更新：2026年9月22日</small>
+          </span>
+        </div>
+      </header>
+
+      <div className={styles.profileBody}>
+        <div className={styles.profileMain}>
+          <section className={styles.profileStory}>
+            <div className={styles.profileSectionTitle}>
+              <BriefcaseBusiness size={18} />
+              <div>
+                <small>これまでの暮らし</small>
+                <h3>生活歴</h3>
+              </div>
+            </div>
+            <div className={styles.timeline}>
+              <article>
+                <time>20〜60代</time>
+                <div>
+                  <b>鉄道会社で車両整備の仕事</b>
+                  <p>
+                    機械を直すことが好きで、40年間勤務。仕事の話を誇らしそうにされる。
+                  </p>
+                </div>
+              </article>
+              <article>
+                <time>休日</time>
+                <div>
+                  <b>妻と三浦へ海釣り</b>
+                  <p>
+                    早朝から出かけ、釣ったアジを家族で食べた思い出をよく話される。
+                  </p>
+                </div>
+              </article>
+              <article>
+                <time>現在</time>
+                <div>
+                  <b>ご自身のペースを大切に生活</b>
+                  <p>
+                    朝食後に新聞を読み、午後はコーヒーを飲みながら静かに過ごす。
+                  </p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <div className={styles.profileCardGrid}>
+            <section className={styles.profileCard}>
+              <div className={styles.profileSectionTitle}>
+                <Heart size={18} />
+                <div>
+                  <small>その人らしさ</small>
+                  <h3>好きなこと・大切なこと</h3>
+                </div>
+              </div>
+              <div className={styles.preferenceList}>
+                <span>
+                  <Fish size={16} /> 海釣り・魚の話
+                </span>
+                <span>
+                  <Newspaper size={16} /> 朝の新聞
+                </span>
+                <span>
+                  <Coffee size={16} /> 午後のコーヒー
+                </span>
+                <span>
+                  <MapPin size={16} /> 三浦の海
+                </span>
+              </div>
+            </section>
+
+            <section className={styles.profileCard}>
+              <div className={styles.profileSectionTitle}>
+                <UsersRound size={18} />
+                <div>
+                  <small>大切な人</small>
+                  <h3>家族・人間関係</h3>
+                </div>
+              </div>
+              <div className={styles.familyConnection}>
+                <b>妻・和子さん</b>
+                <p>三浦への釣りや旅行の思い出を大切にしている。</p>
+                <b>長男・健一さん</b>
+                <p>横浜在住。月に1回ほど面会に来られる。</p>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <aside className={styles.profileAside}>
+          <section className={styles.conversationCard}>
+            <div className={styles.profileSectionTitle}>
+              <MessageCircleMore size={18} />
+              <div>
+                <small>会話のきっかけ</small>
+                <h3>こんな話題がおすすめ</h3>
+              </div>
+            </div>
+            <blockquote>
+              「三浦では、どんな魚を釣っていたんですか？」
+            </blockquote>
+            <p>仕事、鉄道、海釣り、奥様との外出の話では表情が明るくなる。</p>
+          </section>
+
+          <section className={styles.carePointsCard}>
+            <div className={styles.profileSectionTitle}>
+              <TriangleAlert size={18} />
+              <div>
+                <small>ケアに入る前に確認</small>
+                <h3>ケア上の注意</h3>
+              </div>
+            </div>
+            <ul>
+              <li>
+                <b>立ち上がり</b>
+                <span>右膝に痛みが出ることがある。右側で見守る。</span>
+              </li>
+              <li>
+                <b>移動</b>
+                <span>急かさず、手すりを使ってご自身のペースで。</span>
+              </li>
+              <li>
+                <b>声かけ</b>
+                <span>正面から名前を呼び、これから行うことを伝える。</span>
+              </li>
+            </ul>
+          </section>
+
+          <div className={styles.profileSourceNote}>
+            <ShieldCheck size={16} />
+            <span>職員が確認した会話だけをプロフィールに反映</span>
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
