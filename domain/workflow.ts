@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { Workspace, Session, Recording } from "@/types";
+import type {
+  Workspace,
+  Session,
+  Recording,
+  StructuredCareRecord,
+} from "@/types";
 import { DemoMnemoNet, generateDraft } from "./mnemonet";
 import {
   DemoAudioPipeline,
@@ -7,8 +12,57 @@ import {
   ManualResidentAssociation,
 } from "@/services/providers";
 import { rebuildMemoryGraph } from "./memory-graph";
-import { buildStructuredCareRecord } from "./care-record";
+import {
+  buildStructuredCareRecord,
+  careRecordHasContent,
+  summarizeCareRecord,
+} from "./care-record";
 import { generateFamilyReportWithAI } from "./family-report-ai";
+
+const careTextList = z.array(z.string().trim().max(1500)).max(40);
+const structuredCareRecordSchema = z.object({
+  format: z.literal("F-SOAIP"),
+  focus: careTextList,
+  subjective: careTextList,
+  objective: careTextList,
+  assessment: careTextList,
+  intervention: careTextList,
+  plan: careTextList,
+  measurements: z
+    .array(
+      z.object({
+        kind: z.enum([
+          "blood-pressure",
+          "temperature",
+          "pulse",
+          "spo2",
+          "meal",
+          "fluid",
+          "elimination",
+        ]),
+        label: z.string().trim().min(1).max(40),
+        value: z.string().trim().min(1).max(120),
+      }),
+    )
+    .max(12),
+  entries: z
+    .array(
+      z.object({
+        category: z.string().max(80),
+        field: z.enum([
+          "focus",
+          "subjective",
+          "objective",
+          "assessment",
+          "intervention",
+          "plan",
+        ]),
+        content: z.string().max(1500),
+      }),
+    )
+    .max(50)
+    .optional(),
+});
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("transfer"), residentId: z.string().nullable() }),
   z.object({
@@ -30,6 +84,7 @@ export const actionSchema = z.discriminatedUnion("type", [
     id: z.string(),
     revision: z.number().int(),
     draft: z.string().max(5000),
+    structuredDraft: structuredCareRecordSchema.optional(),
     proposals: z
       .array(
         z.object({
@@ -227,6 +282,7 @@ export async function executeAction(
     r.transcript = [];
     r.proposals = [];
     r.draft = "";
+    r.structuredDraft = undefined;
     r.context = [];
     r.stage = 0;
     r.status = "received";
@@ -255,6 +311,7 @@ export async function executeAction(
         state.information.filter((i) => i.residentId === resident.id),
       );
       Object.assign(r, result);
+      r.structuredDraft = buildStructuredCareRecord(result.proposals);
     }
     r.stage++;
     r.revision++;
@@ -296,31 +353,32 @@ export async function executeAction(
             : "pending";
     }
     r.draft = input.draft.trim();
+    const structuredDraft = (input.structuredDraft ||
+      buildStructuredCareRecord(r.proposals)) as StructuredCareRecord;
+    r.structuredDraft = structuredDraft;
     if (input.approve) {
       if (!r.residentId) throw new DomainError("Select a resident first.");
       const reviewedResident = state.residents.find(
         (item) => item.id === r.residentId,
       );
       if (!reviewedResident) throw new DomainError("Resident not found.", 404);
-      const accepted = r.proposals.filter(
-        (p) => p.kind !== "ignored" && p.status !== "rejected",
+      const profiles = r.proposals.filter(
+        (p) => p.kind === "profile" && p.status !== "rejected",
       );
-      const care = accepted.filter((p) => p.kind === "care");
-      if (care.length && !r.draft)
+      const hasCare = careRecordHasContent(structuredDraft);
+      if (hasCare && !r.draft)
         throw new DomainError("The care record cannot be empty.");
-      if (!care.length && r.draft)
+      if (!hasCare && r.draft)
         throw new DomainError(
           "Clear the draft when all care information is rejected.",
         );
-      for (const p of accepted) {
-        const existing =
-          p.kind === "profile" &&
-          state.information.find(
-            (i) =>
-              i.residentId === r.residentId &&
-              i.kind === "profile" &&
-              i.category === p.category,
-          );
+      for (const p of profiles) {
+        const existing = state.information.find(
+          (i) =>
+            i.residentId === r.residentId &&
+            i.kind === "profile" &&
+            i.category === p.category,
+        );
         if (existing) {
           existing.history.push({
             content: existing.content,
@@ -340,7 +398,7 @@ export async function executeAction(
             id: crypto.randomUUID(),
             residentId: r.residentId,
             recordingId: r.id,
-            kind: p.kind as "care" | "profile",
+            kind: "profile",
             category: p.category,
             content: p.content,
             evidence: p.evidence,
@@ -352,7 +410,27 @@ export async function executeAction(
           });
         if (p.status !== "edited") p.status = "approved";
       }
-      if (care.length)
+      if (hasCare) {
+        const careEvidence = r.proposals
+          .filter((p) => p.kind === "care" && p.status !== "rejected")
+          .map((p) => p.evidence)
+          .filter(Boolean)
+          .join(" ")
+          .slice(0, 1500);
+        state.information.push({
+          id: crypto.randomUUID(),
+          residentId: r.residentId,
+          recordingId: r.id,
+          kind: "care",
+          category: "Observation",
+          content: r.draft || summarizeCareRecord(structuredDraft),
+          evidence: careEvidence,
+          createdAt: r.createdAt,
+          updatedAt: now,
+          approvedBy: session.userId,
+          status: "approved",
+          history: [],
+        });
         state.records.push({
           id: crypto.randomUUID(),
           residentId: r.residentId,
@@ -360,9 +438,10 @@ export async function executeAction(
           content: r.draft,
           createdAt: now,
           approvedBy: session.userId,
-          structured: buildStructuredCareRecord(r.proposals),
+          structured: structuredDraft,
         });
-      if (accepted.length) {
+      }
+      if (hasCare || profiles.length) {
         const reportContent = await generateFamilyReportWithAI({
           key: process.env.OPENAI_API_KEY,
           resident: reviewedResident,
@@ -381,6 +460,8 @@ export async function executeAction(
         });
       }
       rebuildMemoryGraph(state);
+      for (const proposal of r.proposals)
+        if (proposal.status !== "rejected") proposal.status = "approved";
       r.status = "completed";
       // Only the approved evidence excerpts persist; raw conversations are discarded on finalization.
       r.transcript = [];

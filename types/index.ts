@@ -73,6 +73,7 @@ export type Recording = {
   transcript: Segment[];
   proposals: Proposal[];
   draft: string;
+  structuredDraft?: StructuredCareRecord;
   context: string[];
   error?: string;
   source: "demo" | "sd-card";

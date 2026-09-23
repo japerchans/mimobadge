@@ -1,6 +1,7 @@
 import { getSession, sameOrigin } from "@/lib/auth";
 import { transaction } from "@/db/repository";
 import { DemoMnemoNet, generateDraft } from "@/domain/mnemonet";
+import { buildStructuredCareRecord } from "@/domain/care-record";
 import { detectResidentFromIntroduction } from "@/domain/resident-detection";
 import { isSupportedRecordingFile } from "@/domain/recording-file";
 import {
@@ -150,6 +151,7 @@ export async function POST(request: Request) {
         transcript: segments,
         proposals: extracted.proposals,
         draft: extracted.draft,
+        structuredDraft: buildStructuredCareRecord(extracted.proposals),
         context: extracted.context,
         source: "sd-card",
         sourceName:

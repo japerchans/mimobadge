@@ -1875,6 +1875,99 @@ dialog::backdrop {
   border-left: 1px solid #dfe6eb;
 }
 
+.care-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.care-form-heading h4 {
+  margin: 0;
+}
+
+.care-form-heading span {
+  color: #839099;
+  font-size: 10px;
+}
+
+.care-record-editor label {
+  display: block;
+}
+
+.care-record-editor input,
+.care-record-editor textarea {
+  width: 100%;
+  color: #233a45;
+  border: 1px solid #cddbe2;
+  background: #fff;
+  box-shadow: inset 0 1px 2px rgba(59, 79, 91, 0.04);
+}
+
+.care-record-editor input:focus,
+.care-record-editor textarea:focus {
+  border-color: #5795a8;
+  outline: 3px solid rgba(87, 149, 168, 0.13);
+  box-shadow: none;
+}
+
+.care-record-editor input::placeholder,
+.care-record-editor textarea::placeholder {
+  color: #a1abb1;
+}
+
+.care-vitals-editable > label {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #bfd7e3;
+  border-radius: 10px;
+  background: #edf5f8;
+}
+
+.care-vitals-editable input {
+  min-width: 0;
+  margin-top: 5px;
+  padding: 7px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.care-daily-life-editable > label {
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.care-daily-life-editable > label + label {
+  border-left: 1px solid #dce5ea;
+}
+
+.care-daily-life-editable input {
+  margin-top: 5px;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.care-observations-editable > label {
+  padding: 9px 11px;
+  border-left: 3px solid #6da5b7;
+  border-radius: 0 8px 8px 0;
+  background: #f2f8fa;
+}
+
+.care-observations-editable textarea,
+.care-action-editable textarea {
+  margin-top: 6px;
+  padding: 9px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.care-action-editable .care-form-section {
+  background: #f8fafb;
+}
+
 .record-summary {
   margin-top: 15px;
   color: #465968;
@@ -1945,6 +2038,7 @@ dialog::backdrop {
   }
 
   .care-daily-life > div + div,
+  .care-daily-life-editable > label + label,
   .care-action-grid .care-form-section + .care-form-section {
     border-left: 0;
     border-top: 1px solid #dfe6eb;

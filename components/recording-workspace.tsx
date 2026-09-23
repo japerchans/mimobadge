@@ -1,8 +1,15 @@
 "use client";
 import { ja } from "@/lib/ja";
-import { generateDraft } from "@/domain/mnemonet";
-import { buildStructuredCareRecord } from "@/domain/care-record";
-import type { Proposal, Recording, WorkspaceResponse } from "@/types";
+import {
+  buildStructuredCareRecord,
+  summarizeCareRecord,
+} from "@/domain/care-record";
+import type {
+  Proposal,
+  Recording,
+  StructuredCareRecord,
+  WorkspaceResponse,
+} from "@/types";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -12,10 +19,8 @@ import {
   CircleAlert,
   CircleHelp,
   Clock3,
-  HeartHandshake,
   Leaf,
   RefreshCw,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -29,7 +34,7 @@ import {
   Status,
   time,
 } from "./shared";
-import { CareRecordView } from "./care-record-view";
+import { CareRecordEditor, CareRecordView } from "./care-record-view";
 export const stages = [
   "録音を準備",
   "話者を区別",
@@ -51,14 +56,19 @@ export function RecordingWorkspace({
   const [association, setAssociation] = useState(r.residentId || "");
   const [proposals, setProposals] = useState<Proposal[]>(r.proposals);
   const [draft, setDraft] = useState(r.draft);
+  const [structuredDraft, setStructuredDraft] = useState<StructuredCareRecord>(
+    r.structuredDraft || buildStructuredCareRecord(r.proposals),
+  );
   const [confirm, setConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const resident = data.residents.find((p) => p.id === r.residentId);
-  const structuredDraft = buildStructuredCareRecord(proposals);
   useEffect(() => {
     setProposals(r.proposals);
     setDraft(r.draft);
-  }, [r.revision, r.proposals, r.draft]);
+    setStructuredDraft(
+      r.structuredDraft || buildStructuredCareRecord(r.proposals),
+    );
+  }, [r.revision, r.proposals, r.draft, r.structuredDraft]);
   const process = async () => {
     setRunning(true);
     setError("");
@@ -86,6 +96,7 @@ export function RecordingWorkspace({
             status,
           })),
           draft,
+          structuredDraft,
           approve,
         },
         approve
@@ -103,7 +114,10 @@ export function RecordingWorkspace({
   const updateProposal = (id: string, patch: Partial<Proposal>) => {
     const next = proposals.map((p) => (p.id === id ? { ...p, ...patch } : p));
     setProposals(next);
-    if (draft === generateDraft(proposals)) setDraft(generateDraft(next));
+  };
+  const updateCareRecord = (next: StructuredCareRecord) => {
+    setStructuredDraft(next);
+    setDraft(summarizeCareRecord(next));
   };
   return (
     <>
@@ -377,139 +391,23 @@ export function RecordingWorkspace({
                   </div>
                 </section>
                 <div className="extraction-column">
-                  <details className="panel extraction-review">
-                    <summary className="panel-header">
-                      <div>
-                        <h2>抽出した内容を確認・修正</h2>
-                        <span className="muted small">
-                          必要な場合だけ開いて編集できます
-                        </span>
-                      </div>
-                      <span className="muted small">
-                        {proposals.filter((p) => p.kind !== "ignored").length}{" "}
-                        件
-                      </span>
-                    </summary>
-                    <div className="extraction-review-body">
-                      {(["care", "profile", "ignored"] as const).map((kind) => (
-                        <div className={`proposal-group ${kind}`} key={kind}>
-                          <div className="proposal-group-title">
-                            <span>
-                              {kind === "care" ? (
-                                <HeartHandshake size={16} />
-                              ) : kind === "profile" ? (
-                                <Leaf size={16} />
-                              ) : (
-                                <X size={16} />
-                              )}
-                              {kind === "care"
-                                ? "今日の介護記録"
-                                : kind === "profile"
-                                  ? "プロフィール"
-                                  : "記録しない会話"}
-                            </span>
-                            <small>
-                              {proposals.filter((p) => p.kind === kind).length}{" "}
-                              件
-                            </small>
-                          </div>
-                          {proposals
-                            .filter((p) => p.kind === kind)
-                            .map((p) => (
-                              <div
-                                className={`proposal ${p.status === "rejected" ? "excluded" : ""}`}
-                                key={p.id}
-                              >
-                                <div className="row spread">
-                                  <strong>{ja(p.category)}</strong>
-                                  {kind !== "ignored" && (
-                                    <button
-                                      className="small-button"
-                                      onClick={() =>
-                                        updateProposal(p.id, {
-                                          status:
-                                            p.status === "rejected"
-                                              ? "pending"
-                                              : "rejected",
-                                        })
-                                      }
-                                    >
-                                      {p.status === "rejected"
-                                        ? "記録に戻す"
-                                        : "記録から除外"}
-                                    </button>
-                                  )}
-                                </div>
-                                {kind === "ignored" ? (
-                                  <p>{ja(p.content)}</p>
-                                ) : (
-                                  <textarea
-                                    aria-label={`${ja(p.category)} の候補`}
-                                    value={ja(p.content)}
-                                    disabled={p.status === "rejected" || saving}
-                                    onChange={(e) =>
-                                      updateProposal(p.id, {
-                                        content: e.target.value,
-                                        status: "edited",
-                                      })
-                                    }
-                                    rows={2}
-                                  />
-                                )}
-                                <details>
-                                  <summary>根拠となる発言</summary>
-                                  <p lang="ja">
-                                    {p.evidence ||
-                                      "発言の保存期間が終了しました。"}
-                                  </p>
-                                </details>
-                                {p.status === "edited" && (
-                                  <span className="edited-label">
-                                    編集した内容です。確定前に確認してください。
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                  {r.context.length > 0 && (
-                    <section className="context-callout">
-                      <div className="row">
-                        <Clock3 size={17} />
-                        <h3>過去の記録から</h3>
-                      </div>
-                      {r.context.map((c) => (
-                        <p key={c} lang="ja">
-                          {ja(c)}
-                        </p>
-                      ))}
-                      <small>
-                        すでに確認された情報です。プロフィールを更新しても、以前の内容は履歴に残ります。
-                      </small>
-                    </section>
-                  )}
                   <section className="panel draft-panel">
                     <div className="panel-header">
                       <div>
                         <h2>介護記録の下書き</h2>
                         <span className="muted small">
-                          会話から定型欄に整理
+                          各欄を直接修正できます
                         </span>
                       </div>
-                      <button
-                        className="text-link"
-                        onClick={() => setDraft(generateDraft(proposals))}
-                      >
-                        <RefreshCw size={14} />
-                        選択内容から作り直す
-                      </button>
                     </div>
                     <div className="draft-body">
-                      <CareRecordView record={structuredDraft} />
+                      <CareRecordEditor
+                        record={structuredDraft}
+                        onChange={updateCareRecord}
+                        disabled={saving}
+                      />
                       <details className="record-summary">
-                        <summary>経過要約を確認・編集</summary>
+                        <summary>経過要約も編集する</summary>
                         <label className="sr-only" htmlFor="draft">
                           介護記録の下書き
                         </label>
@@ -523,10 +421,96 @@ export function RecordingWorkspace({
                         />
                       </details>
                       <p className="muted small">
-                        残す内容と文章が一致しているか確認してください。
+                        青い枠はAIが会話から入力した内容です。空欄は必要な場合だけ入力してください。
                       </p>
                     </div>
                   </section>
+
+                  {proposals.some((p) => p.kind === "profile") && (
+                    <details className="panel extraction-review">
+                      <summary className="panel-header">
+                        <div>
+                          <h2>生活歴プロフィールの候補</h2>
+                          <span className="muted small">
+                            趣味や思い出として残す内容
+                          </span>
+                        </div>
+                        <span className="muted small">
+                          {proposals.filter((p) => p.kind === "profile").length}{" "}
+                          件
+                        </span>
+                      </summary>
+                      <div className="extraction-review-body">
+                        <div className="proposal-group profile">
+                          <div className="proposal-group-title">
+                            <span>
+                              <Leaf size={16} />
+                              プロフィール
+                            </span>
+                          </div>
+                          {proposals
+                            .filter((p) => p.kind === "profile")
+                            .map((p) => (
+                              <div
+                                className={`proposal ${p.status === "rejected" ? "excluded" : ""}`}
+                                key={p.id}
+                              >
+                                <div className="row spread">
+                                  <strong>{ja(p.category)}</strong>
+                                  <button
+                                    className="small-button"
+                                    onClick={() =>
+                                      updateProposal(p.id, {
+                                        status:
+                                          p.status === "rejected"
+                                            ? "pending"
+                                            : "rejected",
+                                      })
+                                    }
+                                  >
+                                    {p.status === "rejected"
+                                      ? "プロフィールに戻す"
+                                      : "プロフィールに残さない"}
+                                  </button>
+                                </div>
+                                <textarea
+                                  aria-label={`${ja(p.category)} の候補`}
+                                  value={ja(p.content)}
+                                  disabled={p.status === "rejected" || saving}
+                                  onChange={(e) =>
+                                    updateProposal(p.id, {
+                                      content: e.target.value,
+                                      status: "edited",
+                                    })
+                                  }
+                                  rows={2}
+                                />
+                                <details>
+                                  <summary>根拠となる発言</summary>
+                                  <p lang="ja">
+                                    {p.evidence ||
+                                      "発言の保存期間が終了しました。"}
+                                  </p>
+                                </details>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </details>
+                  )}
+                  {r.context.length > 0 && (
+                    <section className="context-callout">
+                      <div className="row">
+                        <Clock3 size={17} />
+                        <h3>過去の記録から</h3>
+                      </div>
+                      {r.context.map((c) => (
+                        <p key={c} lang="ja">
+                          {ja(c)}
+                        </p>
+                      ))}
+                    </section>
+                  )}
                 </div>
               </div>
               <div className="review-actions">
@@ -536,12 +520,13 @@ export function RecordingWorkspace({
                     <strong>確認した内容だけを記録に残します。</strong>
                   </span>
                   <small>
+                    介護記録と、確認したプロフィール候補
                     {
                       proposals.filter(
-                        (p) => p.kind !== "ignored" && p.status !== "rejected",
+                        (p) => p.kind === "profile" && p.status !== "rejected",
                       ).length
-                    }{" "}
-                    件の情報を反映します： {resident?.name}さん
+                    }
+                    件を反映します： {resident?.name}さん
                   </small>
                 </div>
                 <div className="row">
@@ -555,7 +540,7 @@ export function RecordingWorkspace({
                       saving ||
                       proposals.some(
                         (p) =>
-                          p.kind !== "ignored" &&
+                          p.kind === "profile" &&
                           p.status !== "rejected" &&
                           !p.content.trim(),
                       )

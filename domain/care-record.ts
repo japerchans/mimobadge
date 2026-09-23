@@ -123,6 +123,27 @@ export function buildStructuredCareRecord(
   return record;
 }
 
+export function careRecordHasContent(record: StructuredCareRecord) {
+  return (
+    record.measurements.some((item) => item.value.trim()) ||
+    (
+      ["subjective", "objective", "assessment", "intervention", "plan"] as const
+    ).some((field) => record[field].some((value) => value.trim()))
+  );
+}
+
+export function summarizeCareRecord(record: StructuredCareRecord) {
+  const sections = [
+    record.measurements.map((item) => `${item.label} ${item.value}`),
+    record.subjective,
+    record.objective,
+    record.assessment,
+    record.intervention,
+    record.plan,
+  ];
+  return unique(sections.flat()).join(" ");
+}
+
 function informationAsProposal(item: Information): Proposal {
   return {
     id: item.id,

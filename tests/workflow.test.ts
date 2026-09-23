@@ -119,6 +119,43 @@ test("approval retries are idempotent", async () => {
   await executeAction(state, input, session);
   assert.deepEqual(state, before);
 });
+test("staff edits to the care form are saved as the approved record", async () => {
+  const { state, recording: r } = await prepared();
+  const structuredDraft = structuredClone(r.structuredDraft!);
+  structuredDraft.measurements = structuredDraft.measurements.filter(
+    (item) => item.kind !== "temperature",
+  );
+  structuredDraft.measurements.push({
+    kind: "temperature",
+    label: "体温",
+    value: "36.8 ℃",
+  });
+  structuredDraft.intervention = ["右側で見守り、手すりの使用を案内した。"];
+  await executeAction(
+    state,
+    {
+      type: "review",
+      id: r.id,
+      revision: r.revision,
+      proposals: r.proposals,
+      draft: "体温36.8℃。右側で見守り、手すりの使用を案内した。",
+      structuredDraft,
+      approve: true,
+    },
+    session,
+  );
+  const saved = state.records.find((record) => record.recordingId === r.id);
+  assert.equal(
+    saved?.structured?.measurements.find(
+      (measurement) => measurement.kind === "temperature",
+    )?.value,
+    "36.8 ℃",
+  );
+  assert.deepEqual(
+    saved?.structured?.intervention,
+    structuredDraft.intervention,
+  );
+});
 test("cross-facility and viewer writes are denied", async () => {
   const state = seedWorkspace();
   await assert.rejects(
