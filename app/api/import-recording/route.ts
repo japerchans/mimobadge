@@ -172,6 +172,7 @@ export async function POST(request: Request) {
         id,
         residentId: latestResident.id,
         residentName: latestResident.name,
+        createdAt: now,
         detectedAutomatically: !manuallySelected,
       };
     });

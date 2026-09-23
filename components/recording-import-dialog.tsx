@@ -10,12 +10,14 @@ import {
 import type { Resident } from "@/types";
 import {
   Check,
+  ChevronRight,
   FileAudio,
   FolderOpen,
   RefreshCw,
   Trash2,
   Upload,
 } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { Modal } from "./shared";
 
@@ -26,12 +28,25 @@ type ImportItem = {
   status: "waiting" | "uploading" | "done" | "error";
   error?: string;
   invalid?: boolean;
+  recordingId?: string;
+  createdAt?: string;
   residentName?: string;
   detectedAutomatically?: boolean;
   progress?: string;
 };
 
 const acceptedExtensions = /\.(m4a|mp3|wav|webm|ogg|aac|flac|mp4)$/i;
+const japanDate = (iso: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .formatToParts(new Date(iso))
+    .filter((part) => ["year", "month", "day"].includes(part.type))
+    .map((part) => part.value)
+    .join("-");
 
 export function RecordingImportDialog({
   residents,
@@ -155,6 +170,9 @@ export function RecordingImportDialog({
             ? {
                 ...candidate,
                 status: "done",
+                recordingId: result.id,
+                residentId: result.residentId,
+                createdAt: result.createdAt,
                 residentName: result.residentName,
                 detectedAutomatically: result.detectedAutomatically,
                 progress: undefined,
@@ -206,9 +224,7 @@ export function RecordingImportDialog({
   return (
     <Modal title="録音ファイルを取り込む" close={() => !busy && close()}>
       <div className="dialog-body import-dialog-body">
-        <p>
-          録音ファイルをここへドラッグしてください。複数の録音をまとめて選べます。
-        </p>
+        <p>録音ファイルをまとめて取り込み、その日の記録に追加します。</p>
         <div className="auto-match-note">
           <Check size={17} />
           <span>
@@ -267,11 +283,16 @@ export function RecordingImportDialog({
                     {item.error && ` · ${item.error}`}
                   </small>
                 </div>
-                {item.status === "done" ? (
-                  <span className="small-button import-open">
+                {item.status === "done" && item.createdAt ? (
+                  <Link
+                    className="small-button import-open"
+                    href={`/residents/${item.residentId}/review/${japanDate(item.createdAt)}`}
+                    onClick={close}
+                  >
                     <Check size={14} />
-                    追加済み
-                  </span>
+                    その日の記録を修正
+                    <ChevronRight size={14} />
+                  </Link>
                 ) : (
                   <>
                     <select
@@ -350,7 +371,7 @@ export function RecordingImportDialog({
           </div>
         )}
         <p className="muted small">
-          会話全文は1日分の記録確定後、または7日後に削除します。職員は入居者ごとにまとめて内容を確認します。
+          会話全文はその日の記録確定後、または7日後に削除します。文字起こし後は入居者ごとの日付画面で記録を修正できます。
         </p>
         {notice && (
           <p className="import-notice" role="status">

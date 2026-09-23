@@ -1,6 +1,6 @@
 "use client";
 import type { WorkspaceResponse } from "@/types";
-import { ChevronRight, Upload } from "lucide-react";
+import { CalendarDays, ChevronRight, Upload } from "lucide-react";
 import Link from "next/link";
 import {
   Avatar,
@@ -51,6 +51,15 @@ export function Dashboard({
   )
     .map(([, group]) => group)
     .sort((a, b) => b.date.localeCompare(a.date));
+  const groupsByDate = dailyGroups.reduce(
+    (dates, group) => {
+      const current = dates.get(group.date) || [];
+      current.push(group);
+      dates.set(group.date, current);
+      return dates;
+    },
+    new Map<string, typeof dailyGroups>(),
+  );
   const exceptions = pending.filter(
     (recording) => recording.status !== "review" || !recording.residentId,
   );
@@ -69,40 +78,59 @@ export function Dashboard({
       <section className="panel daily-inbox">
         <div className="panel-header">
           <div>
-            <h2>確認する1日</h2>
-            <p className="muted small">録音ごとの確認は必要ありません。</p>
+            <h2>日にちごとの録音</h2>
+            <p className="muted small">
+              同じ日の会話をまとめて、1つの記録にします。
+            </p>
           </div>
         </div>
         <div className="daily-inbox-list">
-          {dailyGroups.map((group) => {
-            const resident = data.residents.find(
-              (candidate) => candidate.id === group.residentId,
-            );
-            if (!resident) return null;
-            const sorted = group.recordings.sort((a, b) =>
-              a.createdAt.localeCompare(b.createdAt),
-            );
-            return (
-              <Link
-                className="daily-inbox-row"
-                href={`/residents/${resident.id}/review/${group.date}`}
-                key={`${resident.id}-${group.date}`}
-              >
-                <Avatar resident={resident} />
-                <div>
-                  <strong>{resident.name}さん</strong>
-                  <span>
-                    {formatDate(sorted[0].createdAt)} · {sorted.length}件の会話
-                    {sorted.length > 1
-                      ? ` · ${time(sorted[0].createdAt)}〜${time(sorted.at(-1)!.createdAt)}`
-                      : ` · ${time(sorted[0].createdAt)}`}
-                  </span>
-                </div>
-                <b>1日分を確認</b>
-                <ChevronRight size={18} />
-              </Link>
-            );
-          })}
+          {[...groupsByDate.entries()].map(([date, groups]) => (
+            <section className="daily-date-group" key={date}>
+              <h3>
+                <CalendarDays size={16} />
+                {formatDate(groups[0].recordings[0].createdAt, {
+                  weekday: "short",
+                })}
+              </h3>
+              <div className="daily-date-recordings">
+                {groups.map((group) => {
+                  const resident = data.residents.find(
+                    (candidate) => candidate.id === group.residentId,
+                  );
+                  if (!resident) return null;
+                  const sorted = [...group.recordings].sort((a, b) =>
+                    a.createdAt.localeCompare(b.createdAt),
+                  );
+                  return (
+                    <Link
+                      className="daily-inbox-row"
+                      href={`/residents/${resident.id}/review/${group.date}`}
+                      key={`${resident.id}-${group.date}`}
+                    >
+                      <Avatar resident={resident} />
+                      <div>
+                        <strong>{resident.name}さん</strong>
+                        <span>{sorted.length}件の録音</span>
+                        <div className="recording-time-chips">
+                          {sorted.slice(0, 4).map((recording) => (
+                            <small key={recording.id}>
+                              {time(recording.createdAt)}
+                            </small>
+                          ))}
+                          {sorted.length > 4 && (
+                            <small>+{sorted.length - 4}件</small>
+                          )}
+                        </div>
+                      </div>
+                      <b>その日の記録を作る</b>
+                      <ChevronRight size={18} />
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
         {!dailyGroups.length && (
           <Empty>今日まとめて確認する記録はありません。</Empty>

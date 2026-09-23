@@ -175,8 +175,8 @@ export function DailyReview({
     <div className="daily-review-page">
       <PageHeading
         eyebrow="1日1回の確認"
-        title={`${dateLabel}のまとめ`}
-        description={`${drafts.length}件の会話から作った介護記録とプロフィール更新を、まとめて確認します。`}
+        title={`${dateLabel}の記録を作る`}
+        description={`${drafts.length}件の録音を確認し、必要な欄だけ修正してその日の記録にします。`}
       />
       {error && (
         <p className="error" role="alert">
@@ -277,7 +277,7 @@ export function DailyReview({
         </div>
         <button className="primary" disabled={saving} onClick={approveDay}>
           <Check size={17} />
-          {saving ? "まとめています…" : "1日分を確定して反映"}
+          {saving ? "まとめています…" : "その日の記録を確定"}
         </button>
       </div>
     </div>
