@@ -3,6 +3,14 @@ import { transaction } from "@/db/repository";
 import { DemoMnemoNet, generateDraft } from "@/domain/mnemonet";
 import { detectResidentFromIntroduction } from "@/domain/resident-detection";
 import { isSupportedRecordingFile } from "@/domain/recording-file";
+import {
+  assignSpeakerRoles,
+  labeledTranscript,
+  parseDiarizedSegments,
+  plainTranscript,
+  type DiarizedSegment,
+  type SpeakerRole,
+} from "@/domain/speaker-diarization";
 import type { Proposal, Segment } from "@/types";
 
 export const maxDuration = 60;
@@ -38,9 +46,11 @@ export async function POST(request: Request) {
     if (mode === "transcribe-chunk") {
       const validation = validateAudioFile(file);
       if (validation) return validation;
-      const prompt = String(form.get("prompt") || "").slice(-500);
-      const transcript = await transcribe(file as File, key, prompt);
-      return Response.json({ transcript });
+      const result = await transcribe(file as File, key);
+      return Response.json({
+        transcript: result.text,
+        segments: result.segments,
+      });
     }
 
     if (mode !== "import" && mode !== "assemble-chunks")
@@ -49,6 +59,12 @@ export async function POST(request: Request) {
       mode === "assemble-chunks"
         ? String(form.get("transcript") || "").trim()
         : "";
+    const suppliedSegments =
+      mode === "assemble-chunks"
+        ? parseDiarizedSegments(
+            JSON.parse(String(form.get("segments") || "[]")),
+          )
+        : [];
     if (suppliedTranscript.length > maxTranscriptCharacters)
       return Response.json(
         { error: "録音が長すぎます。200MB以内のWAVを選択してください。" },
@@ -75,8 +91,11 @@ export async function POST(request: Request) {
         { error: "入居者を選択してください。" },
         { status: 400 },
       );
+    const transcription = suppliedTranscript
+      ? { text: suppliedTranscript, segments: suppliedSegments }
+      : await transcribe(file as File, key);
     const transcriptText =
-      suppliedTranscript || (await transcribe(file as File, key));
+      transcription.text || plainTranscript(transcription.segments);
     if (!transcriptText.trim())
       return Response.json(
         { error: "文字起こしできる会話が見つかりませんでした。" },
@@ -93,13 +112,28 @@ export async function POST(request: Request) {
         },
         { status: 422 },
       );
-    const segments = transcriptToSegments(transcriptText);
+    const preliminarySegments = assignSpeakerRoles(
+      transcription.segments.length
+        ? transcription.segments
+        : fallbackDiarizedSegments(transcriptText),
+      resident.name,
+    );
     const extracted = await extractProposals({
       key,
       residentName: resident.name,
       transcriptText,
-      segments,
+      diarizedSegments: transcription.segments.length
+        ? transcription.segments
+        : fallbackDiarizedSegments(transcriptText),
+      preliminarySegments,
     });
+    const segments = assignSpeakerRoles(
+      transcription.segments.length
+        ? transcription.segments
+        : fallbackDiarizedSegments(transcriptText),
+      resident.name,
+      extracted.speakerRoles,
+    );
     const result = await transaction(session.facilityId, (state) => {
       const latestResident = state.residents.find((r) => r.id === resident.id);
       if (!latestResident) return null;
@@ -120,7 +154,7 @@ export async function POST(request: Request) {
         source: "sd-card",
         sourceName:
           String(form.get("sourceName") || "") ||
-          (file instanceof File ? file.name : "SDカード音声"),
+          (file instanceof File ? file.name : "録音ファイル"),
         residentMatch: manuallySelected ? "manual" : "automatic",
         retentionUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
         revision: 1,
@@ -128,7 +162,7 @@ export async function POST(request: Request) {
       state.audit.push({
         id: crypto.randomUUID(),
         actor: session.userId,
-        action: "Imported SD card recording",
+        action: "Imported recording file",
         target: id,
         at: now,
       });
@@ -172,17 +206,16 @@ function validateAudioFile(file: FormDataEntryValue | null) {
   return null;
 }
 
-async function transcribe(file: File, key: string, prompt = "") {
+async function transcribe(file: File, key: string) {
   const form = new FormData();
   form.set("file", file, file.name || "recording.webm");
-  form.set("model", process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe");
-  form.set("language", "ja");
-  const careContext =
-    "介護施設での日本語会話です。人名、血圧、体温、脈拍、SpO2、食事量、水分量、排泄を正確に文字にしてください。聞き取れる笑い声は（笑い）、沈黙は（沈黙）と記録してください。";
   form.set(
-    "prompt",
-    prompt ? `${careContext}\n直前の文脈: ${prompt}` : careContext,
+    "model",
+    process.env.OPENAI_DIARIZE_MODEL || "gpt-4o-transcribe-diarize",
   );
+  form.set("language", "ja");
+  form.set("response_format", "diarized_json");
+  form.set("chunking_strategy", "auto");
   const response = await fetch(
     "https://api.openai.com/v1/audio/transcriptions",
     {
@@ -193,11 +226,17 @@ async function transcribe(file: File, key: string, prompt = "") {
     },
   );
   if (!response.ok) throw new Error("Transcription failed");
-  const result = (await response.json()) as { text?: string };
-  return result.text || "";
+  const result = (await response.json()) as {
+    text?: string;
+    segments?: unknown;
+  };
+  return {
+    text: result.text || "",
+    segments: parseDiarizedSegments(result.segments),
+  };
 }
 
-function transcriptToSegments(text: string): Segment[] {
+function fallbackDiarizedSegments(text: string): DiarizedSegment[] {
   const lines = text
     .split(/\n+/)
     .map((line) => line.trim())
@@ -206,7 +245,7 @@ function transcriptToSegments(text: string): Segment[] {
     ? lines
     : text.match(/[^。！？!?]+[。！？!?]?/g) || [text];
   return chunks.slice(0, 80).map((chunk, index) => ({
-    speaker: "resident",
+    speaker: "話者A",
     start: index * 8,
     end: index * 8 + 7,
     text: chunk.trim(),
@@ -217,12 +256,14 @@ async function extractProposals({
   key,
   residentName,
   transcriptText,
-  segments,
+  diarizedSegments,
+  preliminarySegments,
 }: {
   key: string;
   residentName: string;
   transcriptText: string;
-  segments: Segment[];
+  diarizedSegments: DiarizedSegment[];
+  preliminarySegments: Segment[];
 }) {
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -237,8 +278,8 @@ async function extractProposals({
         store: false,
         max_output_tokens: 1600,
         instructions:
-          "あなたは介護施設の共有知識づくりを支援します。会話から、介護記録に残す事実と、本人の生活歴・好み・性格・人間関係・最近の気分・ケア上の注意点を抽出してください。介護記録は厚生労働省の項目形式記録の考え方に沿い、F=着眼点、S=本人や家族の言葉、O=観察・状態・バイタル等の数値、A=S/Oに基づく職員の判断、I=実際に行った支援・声かけ・介助、P=次の対応に分けます。発言された血圧・体温・脈拍・SpO2・食事量・水分量・排泄は単位を保って抽出してください。笑顔や笑い、表情、気分は発言または観察できる事実がある場合だけMoodとして抽出し、過去との変化を推測しません。痛む場所、避けるべき声かけやNG対応はプロフィールとして明確に残します。診断、服薬判断、根拠のない因果関係や数値の補正はしません。雑談だけの文はignoredにしてください。JSONだけを返してください。",
-        input: `対象者: ${residentName}\n会話:\n${transcriptText.slice(0, 12000)}\n\n次のJSON形式で返してください: {"proposals":[{"kind":"care|profile|ignored","category":"Meals|Hydration|Elimination|Vitals|Sleep|Mood|Activity|Assistance|Medication|Pain or discomfort|Avoid or NG|Former occupation|Interests|Family|Life history|Preferences|Personality|Care preferences|Observation","recordField":"focus|subjective|objective|assessment|intervention|plan（careのみ。profile/ignoredは省略）","content":"日本語の短い文","evidence":"根拠の短い抜粋"}],"draft":"介護記録の簡潔な経過要約。careがない場合は空文字","context":[]}`,
+          "あなたは介護施設の共有知識づくりを支援します。まず話者IDごとに介護職員、入居者、判別不明のいずれかを判断してください。録音冒頭で対象者名を紹介する話者は通常は介護職員です。確信できない話者はunknownとし、その発言を介護記録やプロフィールの根拠に使わないでください。次に会話から、介護記録に残す事実と、本人の生活歴・好み・性格・人間関係・最近の気分・ケア上の注意点を抽出してください。職員の声かけや観察を本人の発言として扱わないでください。介護記録はF=着眼点、S=本人や家族の言葉、O=観察・状態・バイタル等の数値、A=S/Oに基づく職員の判断、I=実際に行った支援・声かけ・介助、P=次の対応に分けます。発言された血圧・体温・脈拍・SpO2・食事量・水分量・排泄は単位を保って抽出してください。診断、服薬判断、根拠のない因果関係や数値の補正はしません。雑談だけの文はignoredにしてください。JSONだけを返してください。",
+        input: `対象者: ${residentName}\n話者付き会話:\n${labeledTranscript(diarizedSegments).slice(0, 14000)}\n\n参考用の会話全文:\n${transcriptText.slice(0, 4000)}\n\n次のJSON形式で返してください: {"speakerRoles":[{"speaker":"話者ID","role":"caregiver|resident|unknown"}],"proposals":[{"kind":"care|profile|ignored","category":"Meals|Hydration|Elimination|Vitals|Sleep|Mood|Activity|Assistance|Medication|Pain or discomfort|Avoid or NG|Former occupation|Interests|Family|Life history|Preferences|Personality|Care preferences|Observation","recordField":"focus|subjective|objective|assessment|intervention|plan（careのみ。profile/ignoredは省略）","content":"日本語の短い文","evidence":"根拠の短い抜粋"}],"draft":"介護記録の簡潔な経過要約。careがない場合は空文字","context":[]}`,
       }),
     });
     if (!response.ok) throw new Error("Extraction failed");
@@ -262,6 +303,7 @@ async function extractProposals({
       }[];
       draft?: string;
       context?: string[];
+      speakerRoles?: { speaker?: string; role?: string }[];
     };
     const proposals: Proposal[] = (parsed.proposals || [])
       .slice(0, 20)
@@ -303,8 +345,32 @@ async function extractProposals({
           ? parsed.draft.slice(0, 5000)
           : generateDraft(proposals),
       context: Array.isArray(parsed.context) ? parsed.context.slice(0, 5) : [],
+      speakerRoles: parseSpeakerRoles(parsed.speakerRoles),
     };
   } catch {
-    return new DemoMnemoNet().extract(segments, []);
+    const fallback = await new DemoMnemoNet().extract(
+      preliminarySegments.filter((segment) => segment.speaker !== "unknown"),
+      [],
+    );
+    return {
+      ...fallback,
+      speakerRoles: {},
+    };
   }
+}
+
+function parseSpeakerRoles(
+  input: { speaker?: string; role?: string }[] | undefined,
+) {
+  const roles: Record<string, SpeakerRole> = {};
+  for (const item of input || []) {
+    const speaker = String(item.speaker || "").slice(0, 80);
+    const role = item.role;
+    if (
+      speaker &&
+      (role === "caregiver" || role === "resident" || role === "unknown")
+    )
+      roles[speaker] = role;
+  }
+  return roles;
 }

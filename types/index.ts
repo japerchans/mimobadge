@@ -17,7 +17,7 @@ export type Caregiver = {
   shift: string;
 };
 export type Segment = {
-  speaker: "caregiver" | "resident";
+  speaker: "caregiver" | "resident" | "unknown";
   start: number;
   end: number;
   text: string;

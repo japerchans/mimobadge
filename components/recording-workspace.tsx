@@ -9,6 +9,7 @@ import {
   AudioLines,
   Check,
   CheckCheck,
+  CircleAlert,
   CircleHelp,
   Clock3,
   HeartHandshake,
@@ -114,7 +115,7 @@ export function RecordingWorkspace({
         title={
           resident ? `${resident.name} · 会話の記録` : "会話した入居者を選択"
         }
-        description={`${formatDate(r.createdAt)} ${time(r.createdAt)}${r.duration ? ` · ${duration(r.duration)}` : ""} · ${r.source === "sd-card" ? r.sourceName || "SDカード音声" : "デモ録音"} · ${data.caregivers.find((c) => c.id === r.caregiverId)?.name}`}
+        description={`${formatDate(r.createdAt)} ${time(r.createdAt)}${r.duration ? ` · ${duration(r.duration)}` : ""} · ${r.source === "sd-card" ? r.sourceName || "録音ファイル" : "デモ録音"} · ${data.caregivers.find((c) => c.id === r.caregiverId)?.name}`}
       >
         <Status value={r.status} />
       </PageHeading>
@@ -304,7 +305,7 @@ export function RecordingWorkspace({
                   <div className="panel-header">
                     <h2>元の会話</h2>
                     <span className="demo-chip">
-                      {r.source === "sd-card" ? "SDカード" : "デモ"}
+                      {r.source === "sd-card" ? "取り込み" : "デモ"}
                     </span>
                   </div>
                   <div className="audio-summary">
@@ -319,6 +320,14 @@ export function RecordingWorkspace({
                       </small>
                     </div>
                   </div>
+                  {r.transcript.some(
+                    (segment) => segment.speaker === "unknown",
+                  ) && (
+                    <div className="speaker-warning" role="status">
+                      <CircleAlert size={16} />
+                      話者を区別できない箇所があります。内容を確認してください。
+                    </div>
+                  )}
                   <div className="transcript">
                     {r.transcript.length ? (
                       r.transcript.map((segment, index) => (
@@ -332,7 +341,9 @@ export function RecordingWorkspace({
                                 ? data.caregivers.find(
                                     (c) => c.id === r.caregiverId,
                                   )?.name
-                                : resident?.name}
+                                : segment.speaker === "resident"
+                                  ? resident?.name
+                                  : "話者不明"}
                             </strong>
                             <span>
                               {Math.floor(segment.start / 60)
@@ -345,7 +356,9 @@ export function RecordingWorkspace({
                           <small>
                             {segment.speaker === "caregiver"
                               ? "介護職員"
-                              : "入居者"}
+                              : segment.speaker === "resident"
+                                ? "入居者"
+                                : "内容を確認してください"}
                           </small>
                           <p lang="ja">{segment.text}</p>
                         </article>

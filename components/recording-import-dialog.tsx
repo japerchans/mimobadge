@@ -1,6 +1,7 @@
 "use client";
 
 import { ja } from "@/lib/ja";
+import type { DiarizedSegment } from "@/domain/speaker-diarization";
 import {
   directRecordingLimit,
   largeWavLimit,
@@ -94,13 +95,15 @@ export function RecordingImportDialog({
       if (item.file.size > directRecordingLimit) {
         const chunks = await splitWavFile(item.file);
         const transcripts: string[] = [];
+        const diarizedSegments: DiarizedSegment[] = [];
+        let timeOffset = 0;
         for (let index = 0; index < chunks.length; index++) {
           setItems((current) =>
             current.map((candidate) =>
               candidate.key === item.key
                 ? {
                     ...candidate,
-                    progress: `分割した音声を文字起こし中 ${index + 1}/${chunks.length}`,
+                    progress: `話者を区別しながら文字起こし中 ${index + 1}/${chunks.length}`,
                   }
                 : candidate,
             ),
@@ -108,8 +111,6 @@ export function RecordingImportDialog({
           const chunkForm = new FormData();
           chunkForm.set("mode", "transcribe-chunk");
           chunkForm.set("file", chunks[index]);
-          if (transcripts.length)
-            chunkForm.set("prompt", transcripts.at(-1)!.slice(-500));
           const chunkResponse = await fetch("/api/import-recording", {
             method: "POST",
             body: chunkForm,
@@ -118,6 +119,21 @@ export function RecordingImportDialog({
           if (!chunkResponse.ok) throw new Error(ja(chunkResult.error));
           if (chunkResult.transcript?.trim())
             transcripts.push(chunkResult.transcript.trim());
+          const chunkSegments = Array.isArray(chunkResult.segments)
+            ? (chunkResult.segments as DiarizedSegment[])
+            : [];
+          for (const segment of chunkSegments) {
+            diarizedSegments.push({
+              speaker: `chunk-${index}-${segment.speaker}`,
+              start: timeOffset + Number(segment.start || 0),
+              end: timeOffset + Number(segment.end || 0),
+              text: String(segment.text || ""),
+            });
+          }
+          timeOffset += Math.max(
+            0,
+            ...chunkSegments.map((segment) => Number(segment.end || 0)),
+          );
         }
         if (!transcripts.length)
           throw new Error("文字起こしできる会話が見つかりませんでした。");
@@ -125,6 +141,7 @@ export function RecordingImportDialog({
         form.set("mode", "assemble-chunks");
         form.set("residentId", item.residentId);
         form.set("transcript", transcripts.join("\n"));
+        form.set("segments", JSON.stringify(diarizedSegments));
         form.set("sourceName", item.file.name);
       } else {
         form.set("file", item.file);
@@ -194,7 +211,7 @@ export function RecordingImportDialog({
     <Modal title="録音ファイルを取り込む" close={() => !busy && close()}>
       <div className="dialog-body import-dialog-body">
         <p>
-          SDカードをパソコンで開き、録音ファイルをここへドラッグしてください。複数の録音をまとめて選べます。
+          録音ファイルをここへドラッグしてください。複数の録音をまとめて選べます。
         </p>
         <div className="auto-match-note">
           <Check size={17} />
@@ -248,7 +265,7 @@ export function RecordingImportDialog({
                   <small>
                     {(item.file.size / 1024 / 1024).toFixed(1)}MB
                     {item.status === "uploading" &&
-                      ` · ${item.progress || "文字起こし・入居者判定・整理中…"}`}
+                      ` · ${item.progress || "話者を区別しながら文字起こし中…"}`}
                     {item.status === "done" &&
                       ` · ${item.residentName}さん${item.detectedAutomatically ? "を自動判定" : "を選択"} · 確認待ち`}
                     {item.error && ` · ${item.error}`}

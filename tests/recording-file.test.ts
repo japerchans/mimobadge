@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isSupportedRecordingFile } from "../domain/recording-file";
 
-test("accepts M4A MIME variants used by browsers and SD card files", () => {
+test("accepts M4A MIME variants used by browsers and recording devices", () => {
   for (const type of [
     "audio/mp4",
     "audio/m4a",

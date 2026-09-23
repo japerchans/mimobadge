@@ -177,8 +177,11 @@ export function RecordingRow({
           {r.source === "sd-card" && (
             <>
               {" "}
-              <span>·</span> SDカード
-              {r.sourceName ? ` · ${r.sourceName}` : ""}
+              {r.sourceName ? (
+                <>
+                  <span>·</span> {r.sourceName}
+                </>
+              ) : null}
             </>
           )}
         </small>

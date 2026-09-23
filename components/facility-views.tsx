@@ -86,7 +86,7 @@ export function Recordings({
       <section className="panel">
         <div className="panel-header">
           <h2>{filter === "pending" ? "確認待ちの録音" : "録音履歴"}</h2>
-          <span className="muted small">SDカード・デモ録音</span>
+          <span className="muted small">取り込んだ音声・デモ録音</span>
         </div>
         {rows.map((r) => (
           <div key={r.id}>
@@ -635,7 +635,9 @@ export function SettingsPage({
                 : "この端末のデモファイル"}
             </dd>
             <dt>音声の処理</dt>
-            <dd>SDカード音声はOpenAIで文字起こし。デモ録音も利用できます。</dd>
+            <dd>
+              取り込んだ音声はOpenAIで話者を区別して文字起こし。デモ録音も利用できます。
+            </dd>
             <dt>会話全文の保存期間</dt>
             <dd>記録確定後、または7日後に削除</dd>
             <dt>入居者情報の保存</dt>

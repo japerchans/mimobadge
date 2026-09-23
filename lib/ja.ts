@@ -226,7 +226,8 @@ const labels: Record<string, string> = {
   "Recent activity": "操作履歴",
   "Audit log": "操作記録",
   "Added resident": "入居者を追加",
-  "Imported SD card recording": "SDカード録音を取り込み",
+  "Imported SD card recording": "録音ファイルを取り込み",
+  "Imported recording file": "録音ファイルを取り込み",
   "Review or edit information to see activity here.":
     "確認・編集の操作を行うと、履歴が表示されます。",
   "Sign out": "ログアウト",

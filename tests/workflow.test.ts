@@ -230,7 +230,7 @@ test("unknown and unassigned residents cannot process; reassignment invalidates 
   assert.equal(ready.recording.proposals.length, 0);
   assert.equal(ready.recording.draft, "");
 });
-test("correcting an automatically matched SD-card recording preserves its transcript", async () => {
+test("correcting an automatically matched imported recording preserves its transcript", async () => {
   const { state, recording } = await prepared();
   recording.source = "sd-card";
   recording.residentMatch = "automatic";

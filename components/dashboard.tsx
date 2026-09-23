@@ -17,7 +17,7 @@ export function Dashboard({
     <div className="inbox-workspace">
       <PageHeading
         title="会話を共有知識にする"
-        description="SDカードの録音を取り込み、内容を確認してメモリーブレインへ反映します。"
+        description="録音を取り込み、内容を確認してメモリーブレインへ反映します。"
       >
         <button className="primary" onClick={onImport}>
           <Upload size={17} />
@@ -33,7 +33,7 @@ export function Dashboard({
         ))}
         {!pending.length && (
           <Empty>
-            確認待ちの会話はありません。SDカードから録音を取り込めます。
+            確認待ちの会話はありません。録音ファイルを取り込めます。
           </Empty>
         )}
       </section>
