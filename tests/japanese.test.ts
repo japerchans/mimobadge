@@ -26,8 +26,5 @@ test("source labels and user-facing validation messages stay understandable in J
     ja("This review changed in another window. Reload before saving."),
     /再読み込み/,
   );
-  assert.match(
-    ja("Invalid access code, or login is not configured."),
-    /アクセスコード/,
-  );
+  assert.match(ja("Please sign in."), /ログイン/);
 });

@@ -1,5 +1,4 @@
-import { redirect, notFound } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { notFound } from "next/navigation";
 import { WorkspaceApp } from "@/components/workspace";
 export const dynamic = "force-dynamic";
 export default async function Page({
@@ -7,7 +6,6 @@ export default async function Page({
 }: {
   params: Promise<{ path?: string[] }>;
 }) {
-  if (!(await getSession())) redirect("/login");
   const { path = [] } = await params;
   const residentTabRoute =
     path[0] === "residents" &&

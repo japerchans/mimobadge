@@ -58,10 +58,6 @@ export function WorkspaceApp() {
   const decodedPathname = decodeURI(pathname);
   const refresh = useCallback(async () => {
     const res = await fetch("/api/workspace", { cache: "no-store" });
-    if (res.status === 401) {
-      window.location.assign("/login");
-      return;
-    }
     const json = await res.json();
     if (!res.ok) throw new Error(ja(json.error));
     setData(json);

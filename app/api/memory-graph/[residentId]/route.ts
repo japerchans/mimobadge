@@ -6,11 +6,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  context: RouteContext<"/api/memory-graph/[residentId]">,
+  context: { params: Promise<{ residentId: string }> },
 ) {
   const session = await getSession();
-  if (!session)
-    return Response.json({ error: "ログインしてください。" }, { status: 401 });
   const { residentId } = await context.params;
   try {
     const graph = await transaction(session.facilityId, (state) => {

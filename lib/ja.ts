@@ -2,10 +2,6 @@ const labels: Record<string, string> = {
   "Invalid origin.": "送信元を確認できません。画面を再読み込みしてください。",
   "Too many attempts. Try again in five minutes.":
     "試行回数の上限に達しました。5分後にお試しください。",
-  "Invalid access code, or login is not configured.":
-    "アクセスコードが正しくないか、ログイン設定が未完了です。",
-  "Session secret is not configured.":
-    "ログイン設定が未完了です。管理者に確認してください。",
   "Request too large.": "送信内容が大きすぎます。内容を短くしてください。",
   "Failed to fetch":
     "通信できませんでした。接続を確認してもう一度お試しください。",
@@ -234,13 +230,6 @@ const labels: Record<string, string> = {
   "Imported recording file": "録音ファイルを取り込み",
   "Review or edit information to see activity here.":
     "確認・編集の操作を行うと、履歴が表示されます。",
-  "Sign out": "ログアウト",
-  "Sign in to the facility prototype.": "施設のデモ環境にログインします。",
-  "Facility access code": "施設のアクセスコード",
-  "Signing in…": "ログイン中…",
-  "Sign in": "ログイン",
-  "Fictional demo data. Access is managed by your prototype administrator.":
-    "架空のデモデータを使用しています。アクセスコードは管理者に確認してください。",
   "Please sign in.": "ログインしてください。",
   "Could not save changes. Please try again.":
     "変更を保存できませんでした。もう一度お試しください。",

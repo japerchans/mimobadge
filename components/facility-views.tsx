@@ -9,7 +9,6 @@ import {
   FileText,
   FolderOpen,
   Heart,
-  LogOut,
   Plus,
   Save,
   Search,
@@ -720,17 +719,6 @@ export function SettingsPage({
           )}
         </section>
       </div>
-      {data.storage === "postgresql" && (
-        <button
-          onClick={async () => {
-            await fetch("/api/session", { method: "DELETE" });
-            window.location.assign("/login");
-          }}
-        >
-          <LogOut size={16} />
-          ログアウト
-        </button>
-      )}
     </>
   );
 }
