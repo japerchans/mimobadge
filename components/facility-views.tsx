@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { CareRecordView } from "./care-record-view";
+import { CareRecordExport } from "./care-record-export";
 import { groupDailyCareRecords } from "./daily-care-records";
 import {
   Action,
@@ -193,10 +194,19 @@ export function Records({ data }: { data: WorkspaceResponse }) {
                   <Avatar resident={r} />
                   <h3>{r.name}</h3>
                 </Link>
-                <span className="muted small">
-                  {formatDate(day.createdAt)} · {day.records.length}
-                  件の録音を反映
-                </span>
+                <div className="record-actions">
+                  <span className="muted small">
+                    {formatDate(day.createdAt)} · {day.records.length}
+                    件の録音を反映
+                  </span>
+                  <CareRecordExport
+                    day={day}
+                    resident={r}
+                    caregiver={data.caregivers.find(
+                      (caregiver) => caregiver.id === day.approvedBy,
+                    )}
+                  />
+                </div>
               </div>
               <div className="record-content">
                 <CareRecordView record={day.structured} empty={day.content} />

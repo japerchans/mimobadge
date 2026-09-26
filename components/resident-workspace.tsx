@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ja } from "@/lib/ja";
 import { moodTimeline } from "@/domain/mood";
 import { CareRecordView } from "./care-record-view";
+import { CareRecordExport } from "./care-record-export";
 import { FamilyReports } from "./facility-views";
 import { DailyReview } from "./daily-review";
 import { groupDailyCareRecords } from "./daily-care-records";
@@ -141,7 +142,16 @@ export function ResidentWorkspace({
                       )?.name || "職員"}
                     </span>
                   </div>
-                  <Status value="approved" />
+                  <div className="record-actions">
+                    <Status value="approved" />
+                    <CareRecordExport
+                      day={day}
+                      resident={r}
+                      caregiver={data.caregivers.find(
+                        (caregiver) => caregiver.id === day.approvedBy,
+                      )}
+                    />
+                  </div>
                 </div>
                 <div className="record-content">
                   <CareRecordView
